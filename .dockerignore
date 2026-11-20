@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.gitlab
+npm-debug.log
+Dockerfile
+backend/**/bin
+backend/**/obj
+.env
+.env.local

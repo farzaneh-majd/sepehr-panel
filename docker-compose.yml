@@ -1,0 +1,55 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sepehr_panel}
+      MYSQL_USER: ${MYSQL_USER:-sepehr}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sepehr_dev_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - sepehr_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root_dev_password}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    image: ${DOCKERHUB_USERNAME:-local}/sepehr-panel-api:${IMAGE_TAG:-latest}
+    build: ./backend/SepehrPanel.Api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-sepehr_panel};User=${MYSQL_USER:-sepehr};Password=${MYSQL_PASSWORD:-sepehr_dev_password};
+      Jwt__Key: ${JWT_KEY:-local-compose-key-change-before-production-123456789}
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-ChangeMe123!}
+      Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:3000}
+      Demo__AllowAnonymousIssues: "true"
+      Database__ApplyMigrations: "true"
+    ports:
+      - "5000:8080"
+
+  web:
+    image: ${DOCKERHUB_USERNAME:-local}/sepehr-panel-web:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_URL: /api/
+        NEXT_PUBLIC_BASE_URL: /
+        API_INTERNAL_URL: http://api:8080
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_INTERNAL_URL: http://api:8080
+    ports:
+      - "3000:3000"
+
+volumes:
+  sepehr_mysql:

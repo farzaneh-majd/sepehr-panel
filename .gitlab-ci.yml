@@ -1,0 +1,29 @@
+---
+stages:
+  - release
+  - deploy
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "master"
+      when: always
+    - when: never
+
+variables:
+  DOCKER_REPO: registry.hamdocker.ir/fpakro
+  REGISTRY_IMAGE: awan-panel-next
+
+.default-before-script:
+  before_script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "dev" ]]; then
+        VERSION=$(grep '^version:' version.yml | cut -d' ' -f2 | tr -d '"')
+      elif [[ "$CI_COMMIT_BRANCH" == "master" ]]; then
+        VERSION=$(grep '^master_version:' version.yml | cut -d' ' -f2 | tr -d '"')
+      fi
+      echo "Extracted VERSION: $VERSION"
+    - export DOCKER_IMAGE_NAME="$REGISTRY_IMAGE:$VERSION"
+    - echo "$DOCKER_REPO_PASSWORD" | base64 -d | docker login --username "$DOCKER_REPO_USER" --password-stdin "$DOCKER_REPO"  
+     
+include:
+  - local: .gitlab-ci/*.gitlab-ci.yml
