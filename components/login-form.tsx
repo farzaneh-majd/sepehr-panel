@@ -14,7 +14,6 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useEffect, useState } from "react"
@@ -24,7 +23,6 @@ import { useRouter } from "next/navigation"
 import { getCookie, setCookie } from "cookies-next"
 import { jwtDecode } from "jwt-decode"
 import axiosInstance from "@/lib/axios-config"
-import { useUser } from "@/context/UserContext"
 
 interface LoginInputs {
   username: string
@@ -42,8 +40,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div"> & { deactivatedNotice?: boolean }) {
   const router = useRouter()
-  const { refreshUser } = useUser()
-  const { control, handleSubmit, setError, clearErrors } = useForm<LoginInputs>({
+  const { control, handleSubmit, clearErrors } = useForm<LoginInputs>({
     defaultValues: {
       username: "",
       password: "",
@@ -53,6 +50,7 @@ export function LoginForm({
   const [backError, setBackError] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [deactivated, setDeactivated] = useState(deactivatedNotice)
+  const [loginMessage, setLoginMessage] = useState("")
 
   useEffect(() => {
     const refresh = getCookie("refresh")
@@ -71,62 +69,43 @@ export function LoginForm({
     }
   }, [router])
 
-  const handleBackendError = () => {
-    setBackError(true)
-    setError("username", {
-      type: "manual",
-      message: "",
-    })
-    setError("password", {
-      type: "manual",
-      message: "",
-    })
-  }
-
-  const sendLoginRequest = (data: LoginInputs) => {
+  const sendLoginRequest = async (data: LoginInputs) => {
     setIsLoading(true)
-    axiosInstance
-      .post("/login", data)
-      .then(async (response) => {
-        setIsLoading(false)
-
-        const access = response.data.result.access
-        const refresh = response.data.result.refresh
-
-        const decodedAccess = jwtDecode<JwtPayload>(access)
-        const expirationDate = new Date(decodedAccess.exp * 1000)
-                
-        setCookie("access", access, { 
-          expires: expirationDate,          
-          sameSite: "lax"
-        })
-
-        axiosInstance.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${access}`
-
-        const decodedRefresh = jwtDecode<JwtPayload>(refresh)
-        const expirationRefreshDate = new Date(decodedRefresh.exp * 1000)
-        setCookie("refresh", refresh, { 
-          expires: expirationRefreshDate,          
-          sameSite: "lax"
-        })
-
-        // Refresh user data in context before navigating
-        await refreshUser()
-        router.push("/dashboard")
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       })
-      .catch((error) => {
-        setIsLoading(false)
-        setBackError(true)
-        setDeactivated(error?.response?.data?.message === "User is deactivated")
-      })
+      const payload = await response.json()
+      if (!response.ok) {
+        const error = new Error(payload?.message || "Login failed") as Error & { status?: number; backendMessage?: string }
+        error.status = response.status
+        error.backendMessage = payload?.message
+        throw error
+      }
+      const access = payload.result.access
+      const refresh = payload.result.refresh
+      document.cookie = `access=${encodeURIComponent(access)}; Path=/; Max-Age=900; SameSite=Lax`
+      document.cookie = `refresh=${encodeURIComponent(refresh)}; Path=/; Max-Age=604800; SameSite=Lax`
+      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${access}`
+    } catch (error: unknown) {
+      setIsLoading(false)
+      setBackError(true)
+      const loginError = error as { status?: number; backendMessage?: string }
+      const isDeactivated = loginError.backendMessage === "User is deactivated"
+      setDeactivated(isDeactivated)
+      setLoginMessage(loginError.status === 401 ? "Invalid username or password" : "Unable to sign in right now. Please try again.")
+      return
+    }
+    window.location.replace("/dashboard")
   }
 
   const onSubmit: SubmitHandler<LoginInputs> = (data) => {
     clearErrors()
     setBackError(false)
     setDeactivated(false)
+    setLoginMessage("")
     sendLoginRequest(data)
   }
 
@@ -137,9 +116,9 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      <Card className="border-[#dfe1e6] shadow-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
+          <CardTitle className="text-xl text-[#172b4d]">Sign in to Sepehr Panel</CardTitle>
           <CardDescription>
             Login with your username and password
           </CardDescription>
@@ -173,12 +152,6 @@ export function LoginForm({
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
                 </div>
                 <Controller
                   name="password"
@@ -191,7 +164,8 @@ export function LoginForm({
                   render={({ field }) => (
                     <div className="relative">
                       <Input
-                        id="password"
+                      id="password"
+                      placeholder="Enter your password"
                         type={showPassword ? "text" : "password"}
                         required
                         disabled={isLoading}
@@ -207,6 +181,7 @@ export function LoginForm({
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                         disabled={isLoading}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -220,7 +195,7 @@ export function LoginForm({
                 </FieldDescription>
               ) : backError && (
                 <FieldDescription className="text-destructive">
-                  Invalid username or password
+                  {loginMessage}
                 </FieldDescription>
               )}
               <Field>

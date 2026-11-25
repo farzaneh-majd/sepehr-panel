@@ -117,9 +117,9 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
       case "overdue":
         return "bg-red-600 text-white";
       case "near":
-        return "bg-yellow-600 text-white";
+        return "bg-[#fff7d6] text-[#7f5f01]";
       default:
-        return "bg-[#3d4449] text-gray-300";
+        return "bg-[#f1f2f4] text-[#44546f]";
     }
   };
 
@@ -129,8 +129,8 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
       style={style}
       {...attributes}
       {...listeners}
-      className={`group relative rounded-lg bg-[#22272b] shadow-sm cursor-pointer 
-        hover:ring-2 hover:ring-blue-500/50 hover:bg-[#2c3339] 
+      className={`group relative cursor-pointer rounded-md border border-[#dfe1e6] bg-white shadow-[0_1px_2px_rgba(9,30,66,0.18)]
+        hover:border-[#85b8ff] hover:shadow-[0_2px_6px_rgba(9,30,66,0.22)]
         transition-all duration-200 ${
         isDragging || isSortableDragging 
           ? "opacity-60 rotate-2 shadow-xl scale-105" 
@@ -181,14 +181,19 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
         )}
 
         {/* Title */}
-        <p dir="auto" className="text-sm text-gray-200 leading-relaxed">{card.title}</p>
+        <p dir="auto" className="text-base font-medium leading-relaxed text-[#172b4d]">
+          {card.sequenceNumber != null && (
+            <span className="mr-1.5 font-mono text-xs font-semibold text-[#0c66e4]">#{card.sequenceNumber}</span>
+          )}
+          {card.title}
+        </p>
 
         {/* Badges Row */}
         {(hasDueDate || hasComments || hasChecklists || hasAttachments || hasMentions || hasLinkedCards || hasBugs || hasDescription || hasMembers) && (
           <div className="flex items-center flex-wrap gap-2 text-xs">
             {/* Watching indicator (optional) */}
             {card.isArchived && (
-              <div className="flex items-center gap-1 text-gray-500">
+              <div className="flex items-center gap-1 text-[#626f86]">
                 <Eye className="w-3.5 h-3.5" />
               </div>
             )}
@@ -208,21 +213,21 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
 
             {/* Description indicator */}
             {hasDescription && (
-              <div className="flex items-center text-gray-500" title="This card has a description">
+              <div className="flex items-center text-[#626f86]" title="This card has a description">
                 <AlignLeft className="w-3.5 h-3.5" />
               </div>
             )}
 
             {/* Comments */}
             {hasComments && (
-              <div className="flex items-center gap-1 text-gray-400" title="Comments">
+              <div className="flex items-center gap-1 text-[#626f86]" title="Comments">
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>{commentCount}</span>
               </div>
             )}
 
             {hasMentions && (
-              <div className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-blue-500/20 text-blue-300" title="You were mentioned">
+              <div className="flex items-center gap-0.5 rounded bg-[#e9f2ff] px-1 py-0.5 text-[#0c66e4]" title="You were mentioned">
                 <AtSign className="w-3.5 h-3.5" />
                 <span>{mentionCount}</span>
               </div>
@@ -230,14 +235,14 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
 
             {/* Attachments */}
             {hasAttachments && (
-              <div className="flex items-center gap-1 text-gray-400" title="Attachments">
+              <div className="flex items-center gap-1 text-[#626f86]" title="Attachments">
                 <Paperclip className="w-3.5 h-3.5" />
                 <span>{attachmentCount}</span>
               </div>
             )}
 
             {hasLinkedCards && (
-              <div className="flex items-center gap-1 text-gray-400" title="Attached cards">
+              <div className="flex items-center gap-1 text-[#626f86]" title="Attached cards">
                 <Link2 className="w-3.5 h-3.5" />
                 <span>{linkedCardCount}</span>
               </div>
@@ -246,7 +251,7 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
             {hasBugs && (
               <div
                 className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
-                  openBugCount > 0 ? "bg-red-500/20 text-red-300" : "bg-green-600 text-white"
+                  openBugCount > 0 ? "bg-[#ffebe6] text-[#c9372c]" : "bg-[#1f845a] text-white"
                 }`}
                 title={`${openBugCount} open of ${bugCount} bugs`}
               >
@@ -261,7 +266,7 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
                 className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
                   checklistComplete === checklistTotal
                     ? "bg-green-600 text-white"
-                    : "text-gray-400"
+                    : "text-[#626f86]"
                 }`}
               >
                 <CheckSquare className="w-3.5 h-3.5" />
@@ -280,7 +285,7 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
                     return (
                       <div
                         key={member.id}
-                        className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border-2 border-[#22272b] flex items-center justify-center text-[10px] font-medium text-white shadow-sm hover:z-10 hover:scale-110 transition-transform"
+                        className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-blue-500 to-purple-600 text-[10px] font-medium text-white shadow-sm transition-transform hover:z-10 hover:scale-110"
                         title={`${member.firstName} ${member.lastName}`}
                       >
                         {avatarUrl ? (
@@ -298,7 +303,7 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
                     );
                   })}
                   {allMembers.length > 3 && (
-                    <div className="w-7 h-7 rounded-full bg-gray-600 border-2 border-[#22272b] flex items-center justify-center text-[10px] text-white font-medium">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#626f86] text-[10px] font-medium text-white">
                       +{allMembers.length - 3}
                     </div>
                   )}
@@ -312,18 +317,18 @@ export function KanbanCard({ card, isDragging = false, dragDisabled = false, onC
       {/* Hover buttons - top right, expand next to archive */}
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all">
         <button
-          className="p-1 bg-[#22272b] rounded hover:bg-[#3d4449] transition-colors"
+          className="rounded bg-white p-1 shadow-sm transition-colors hover:bg-[#091e4224]"
           onClick={(e) => { e.stopPropagation(); onClick?.(); }}
           title="Open card"
         >
-          <ExternalLink className="w-3 h-3 text-gray-400" />
+          <ExternalLink className="h-3 w-3 text-[#44546f]" />
         </button>
         <button
-          className="p-1 bg-[#22272b] rounded hover:bg-[#3d4449] transition-colors"
+          className="rounded bg-white p-1 shadow-sm transition-colors hover:bg-[#091e4224]"
           onClick={(e) => { e.stopPropagation(); card.isArchived ? onUnarchive?.(card) : onArchive?.(card); }}
           title={card.isArchived ? "بازگردانی از آرشیو" : "آرشیو کردن"}
         >
-          {card.isArchived ? <ArchiveRestore className="w-3 h-3 text-amber-400" /> : <Archive className="w-3 h-3 text-gray-400" />}
+          {card.isArchived ? <ArchiveRestore className="h-3 w-3 text-[#974f0c]" /> : <Archive className="h-3 w-3 text-[#44546f]" />}
         </button>
       </div>
     </div>

@@ -231,7 +231,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
   }, [boardId, board]);
 
   useEffect(() => {
-    if (board?.name) document.title = `${board.name} | Awan`;
+    if (board?.name) document.title = `${board.name} | Sepehr Panel`;
   }, [board?.name]);
 
   useEffect(() => {
@@ -776,7 +776,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
   if (!board) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 h-full bg-[#1d2125] text-gray-300">
+      <div className="flex h-full flex-col items-center justify-center gap-4 bg-[#f4f5f7] text-[#44546f]">
         <p>Board not found</p>
         <Button variant="secondary" onClick={() => router.push("/dashboard/boards")}>Back to boards</Button>
       </div>
@@ -784,22 +784,22 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
   }
 
   return (
-    <div
-      className="h-dvh flex flex-col w-full overflow-hidden"
-      style={{ backgroundColor: board.background }}
-    >
+    <div className="h-dvh flex flex-col w-full overflow-hidden bg-[#f4f5f7] text-[#172b4d]">
       {/* Board Header */}
-      <div className="flex items-center justify-between gap-2 px-2 sm:px-4 py-2 sm:py-3 bg-black/20 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-4">
+      <div
+        className="flex items-center justify-between gap-2 border-t-4 border-b border-[#dfe1e6] bg-white px-2 py-2 shadow-sm sm:px-5 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-4"
+        style={{ borderTopColor: board.background }}
+      >
         <div className="flex items-center gap-1 sm:gap-3 min-w-0">
           <Button
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-white/20 shrink-0"
+            className="shrink-0 text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d]"
             onClick={() => router.push("/dashboard/boards")}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 dir="auto" className="text-base sm:text-lg font-bold text-white truncate">{board.name}</h1>
+          <h1 dir="auto" className="truncate text-lg font-semibold text-[#172b4d] sm:text-xl">{board.name}</h1>
         </div>
         {/* Card Search */}
         <div className="hidden md:block">
@@ -813,7 +813,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-white hover:bg-white/20"
+            className="text-[#44546f] hover:bg-[#091e4224] md:hidden"
             onClick={() => setMobileSearchOpen((v) => !v)}
           >
             {mobileSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
@@ -844,10 +844,10 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                   >
                     <button
                       type="button"
-                      className="relative rounded-full hover:z-10 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 data-[state=open]:z-10 data-[state=open]:ring-2 data-[state=open]:ring-white/70"
+                      className="relative rounded-full hover:z-10 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c66e4] data-[state=open]:z-10 data-[state=open]:ring-2 data-[state=open]:ring-[#0c66e4]"
                       title={`${member.firstName ?? ""} ${member.lastName ?? ""}`.trim()}
                     >
-                      <Avatar className="w-8 h-8 border-2 border-white/20">
+                      <Avatar className="h-8 w-8 border-2 border-white shadow-sm">
                         <AvatarImage src={avatarUrl || ""} />
                         <AvatarFallback className="bg-blue-600 text-white text-xs">
                           {(member.firstName?.[0] || "") + (member.lastName?.[0] || "")}
@@ -861,7 +861,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                 <button
                   type="button"
                   onClick={() => setShowMembersModal(true)}
-                  className="w-8 h-8 rounded-full bg-gray-600 border-2 border-white/20 flex items-center justify-center text-xs text-white hover:z-10 hover:bg-gray-500"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#626f86] text-xs text-white shadow-sm hover:z-10 hover:bg-[#44546f]"
                   title="All members"
                 >
                   +{boardMembers.length - 4}
@@ -871,7 +871,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-white hover:bg-white/20 sm:ml-2 px-2 xl:px-3"
+              className="px-2 text-[15px] text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d] sm:ml-2 xl:px-3"
               onClick={() => setShowMembersModal(true)}
               title="Members"
             >
@@ -884,7 +884,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="text-white hover:bg-white/20 px-2 xl:px-3"
+            className="px-2 text-[15px] text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d] xl:px-3"
             onClick={() => setShowEditModal(true)}
             title="Settings"
           >
@@ -895,7 +895,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
           <Button
             variant="ghost"
             size="icon"
-            className={cn("text-white hover:bg-white/20", showMenu && "bg-white/20")}
+            className={cn("text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d]", showMenu && "bg-[#091e4224]")}
             onClick={() => setShowMenu(v => !v)}
             title="Menu"
             aria-expanded={showMenu}
@@ -907,7 +907,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
       </div>
 
       {mobileSearchOpen && (
-        <div className="md:hidden px-3 py-2 bg-black/20 border-t border-white/10">
+        <div className="border-b border-[#dfe1e6] bg-white px-3 py-2 md:hidden">
           <CardSearch
             lists={lists}
             autoFocus
@@ -920,6 +920,8 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
         </div>
       )}
 
+      <BoardBottomMenu activeView={activeView} onViewChange={setActiveView} />
+
       {/* Board Content - Based on Active View */}
       {activeView === "board" && (
         <div
@@ -930,7 +932,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
           onPointerCancel={endPan}
           onLostPointerCapture={endPan}
           className={cn(
-            "flex-1 min-h-0 overflow-x-auto overflow-y-hidden px-3 pt-3 pb-20 sm:p-4 sm:pb-24 scroll-px-3 sm:scroll-px-0",
+            "flex-1 min-h-0 overflow-x-auto overflow-y-hidden px-3 py-4 sm:px-6 sm:py-5 scroll-px-3 sm:scroll-px-0",
             !activeCard && !activeList && !isPanning && "snap-x snap-mandatory sm:snap-none",
             isPanning && "cursor-grabbing select-none"
           )}
@@ -967,7 +969,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                 {/* Add List */}
               <div className="w-[85vw] max-w-[320px] sm:w-72 flex-shrink-0 snap-center">
                 {addingList ? (
-                  <div className="rounded-xl p-3 space-y-2" style={{ backgroundColor: "#101204" }}>
+                  <div className="space-y-2 rounded-lg border border-[#dfe1e6] bg-[#f1f2f4] p-3 shadow-sm">
                     <Input
                       value={newListName}
                       onChange={(e) => setNewListName(e.target.value)}
@@ -977,7 +979,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                         if (e.key === "Enter") addList();
                         if (e.key === "Escape") setAddingList(false);
                       }}
-                      className="bg-[#22272b] border-[#3d4449] text-gray-200 placeholder:text-gray-500"
+                      className="border-[#8590a2] bg-white text-[#172b4d] placeholder:text-[#626f86]"
                     />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={addList}>
@@ -986,7 +988,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-gray-400 hover:text-gray-200 hover:bg-white/10"
+                        className="text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d]"
                         onClick={() => setAddingList(false)}
                       >
                         Cancel
@@ -995,7 +997,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                   </div>
                 ) : (
                   <button
-                    className="w-full bg-white/20 hover:bg-white/30 text-white rounded-xl p-3 flex items-center gap-2 transition-colors"
+                    className="flex w-full items-center gap-2 rounded-lg border border-dashed border-[#8590a2] bg-[#ebecf0] p-3 text-[#44546f] transition-colors hover:border-[#0c66e4] hover:bg-[#dfe1e6] hover:text-[#0c66e4]"
                     onClick={() => setAddingList(true)}
                   >
                     <Plus className="w-5 h-5" />
@@ -1017,10 +1019,9 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
               )}
               {activeList && (
                 <div 
-                  className="w-72 rounded-xl p-3 opacity-80"
-                  style={{ backgroundColor: "#101204" }}
+                  className="w-72 rounded-lg border border-[#dfe1e6] bg-[#f1f2f4] p-3 opacity-90 shadow-lg"
                 >
-                  <h3 className="font-semibold text-gray-200">{activeList.name}</h3>
+                  <h3 className="font-semibold text-[#172b4d]">{activeList.name}</h3>
                 </div>
               )}
             </DragOverlay>
@@ -1030,7 +1031,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
       {/* Planner View */}
       {activeView === "planner" && (
-        <div className="flex-1 min-h-0 overflow-hidden p-2 pb-20 sm:p-4 sm:pb-24">
+        <div className="flex-1 min-h-0 overflow-hidden p-3 sm:p-5">
           <BoardPlanner
             lists={visibleLists}
             onCardClick={setSelectedCard}
@@ -1042,10 +1043,10 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
       {/* Switch Boards View - Placeholder */}
       {activeView === "switch" && (
-        <div className="flex-1 flex items-center justify-center p-4 pb-24">
-          <div className="text-center text-gray-400">
+        <div className="flex flex-1 items-center justify-center p-4">
+          <div className="text-center text-[#626f86]">
             <div className="text-6xl mb-4">🔄</div>
-            <h3 className="text-xl font-semibold text-white mb-2">Switch Boards</h3>
+            <h3 className="mb-2 text-xl font-semibold text-[#172b4d]">Switch Boards</h3>
             <p>Quickly switch between your boards</p>
             <Button
               className="mt-4"
@@ -1060,22 +1061,19 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
       {lastDeleted && (
         <div
           role="status"
-          className="fixed bottom-20 sm:bottom-24 left-1/2 z-50 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-3 rounded-lg border border-[#3d4449] bg-[#282e33] px-4 py-2.5 text-sm text-gray-200 shadow-2xl"
+          className="fixed bottom-5 left-1/2 z-50 flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-3 rounded-lg border border-[#dfe1e6] bg-white px-4 py-2.5 text-sm text-[#172b4d] shadow-xl"
         >
           <span className="min-w-0 truncate">
             {lastDeleted.kind === "card" ? "Card" : "List"} <span dir="auto" className="font-medium">&ldquo;{lastDeleted.name}&rdquo;</span> moved to Deleted items
           </span>
-          <button type="button" onClick={undoDelete} className="shrink-0 font-semibold text-blue-400 hover:text-blue-300">
+          <button type="button" onClick={undoDelete} className="shrink-0 font-semibold text-[#0c66e4] hover:text-[#0055cc]">
             Undo
           </button>
-          <button type="button" onClick={() => setLastDeleted(null)} className="shrink-0 text-gray-500 hover:text-gray-300" aria-label="Dismiss">
+          <button type="button" onClick={() => setLastDeleted(null)} className="shrink-0 text-[#626f86] hover:text-[#172b4d]" aria-label="Dismiss">
             <X className="h-4 w-4" />
           </button>
         </div>
       )}
-
-      {/* Bottom Menu */}
-      <BoardBottomMenu activeView={activeView} onViewChange={setActiveView} />
 
       {/* Card Detail Modal */}
       {selectedCard && (

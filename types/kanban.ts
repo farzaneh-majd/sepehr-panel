@@ -46,6 +46,11 @@ export interface Card {
   position: number;
   coverColor: string | null;
   coverImage: string | null;
+  sequenceNumber?: number | null;
+  createdById?: number | null;
+  updatedById?: number | null;
+  createdByName?: string | null;
+  updatedByName?: string | null;
   dueDate: string | null;
   dueComplete: boolean;
   isArchived: boolean;

@@ -9,6 +9,8 @@ namespace SepehrPanel.Api.Endpoints;
 
 public static class SepehrEndpoints
 {
+    private static readonly string[] DefaultBoardListNames = { "TO DO", "IN PROGRESS", "DONE" };
+
     public static void MapSepehrApi(this WebApplication app)
     {
         var api = app.MapGroup("/api");
@@ -18,6 +20,8 @@ public static class SepehrEndpoints
         MapProjects(api);
         MapBoards(api);
         MapCards(api);
+        api.MapKanbanFeatures();
+        api.MapInventory();
         MapTimeEntries(api);
     }
 
@@ -169,61 +173,102 @@ public static class SepehrEndpoints
         });
         boards.MapPost("/", async (BoardWrite request, HttpContext http, AppDbContext db) =>
         {
-            var x = new Board { Name = request.Name.Trim(), Description = request.Description, Background = request.Background ?? "#0052cc", Visibility = request.Visibility ?? "private", ProjectId = request.ProjectId, OwnerId = Api.UserId(http.User)!.Value };
-            db.Boards.Add(x); await db.SaveChangesAsync(); return Results.Created($"/api/board/{x.Id}", Api.Ok(BoardDto(x)));
+            var uid = Api.UserId(http.User)!.Value;
+            var x = new Board { Name = request.Name.Trim(), Description = request.Description, Background = request.Background ?? "#0052cc", Visibility = request.Visibility ?? "private", ProjectId = request.ProjectId, OwnerId = uid, CreatedById = uid, UpdatedById = uid };
+            db.Boards.Add(x); await db.SaveChangesAsync();
+            db.BoardMembers.Add(new BoardMember { BoardId = x.Id, UserId = x.OwnerId, Role = "owner" });
+            db.BoardLists.AddRange(DefaultBoardListNames.Select((name, position) => new BoardList
+            {
+                BoardId = x.Id,
+                Name = name,
+                Position = position,
+                CreatedById = uid,
+                UpdatedById = uid
+            }));
+            await db.SaveChangesAsync();
+            return Results.Created($"/api/board/{x.Id}", Api.Ok(BoardDto(x)));
         });
         boards.MapGet("/{id:int}/detail", async (int id, AppDbContext db) =>
         {
             var board = await db.Boards.FindAsync(id); if (board is null) return Results.NotFound();
-            var members = await (from bm in db.BoardMembers join u in db.Users on bm.UserId equals u.Id where bm.BoardId == id select new { bm.Id, bm.UserId, bm.Role, user = UserDto(u) }).ToListAsync();
-            return Results.Ok(Api.Ok(new { board.Id, board.Name, board.Description, board.Background, board.Visibility, userId = board.OwnerId, board.ProjectId, board.IsStarred, board.IsClosed, board.CreatedAt, board.UpdatedAt, members }));
+            var members = await KanbanFeatureEndpoints.BoardMembers(db, id, board.OwnerId);
+            var labels = await KanbanFeatureEndpoints.BoardLabels(db, id);
+            return Results.Ok(Api.Ok(new { board.Id, board.Name, board.Description, board.Background, board.Visibility, board.AutoNumberCards, userId = board.OwnerId, board.ProjectId, board.IsStarred, board.IsClosed, board.CreatedById, board.UpdatedById, board.CreatedAt, board.UpdatedAt, members, labels }));
         });
         boards.MapGet("/{id:int}/lists", async (int id, AppDbContext db) =>
         {
-            var lists = await db.BoardLists.Where(x => x.BoardId == id).OrderBy(x => x.Position).ToListAsync();
-            var cards = await db.Cards.Where(x => lists.Select(l => l.Id).Contains(x.ListId)).OrderBy(x => x.Position).ToListAsync();
-            return Results.Ok(Api.Ok(lists.Select(l => new { l.Id, l.Name, l.BoardId, l.Position, l.IsArchived, l.CreatedAt, l.UpdatedAt, cards = cards.Where(c => c.ListId == l.Id).Select(CardDto) })));
+            var lists = await db.BoardLists.Where(x => x.BoardId == id && !x.IsDeleted).OrderBy(x => x.Position).ToListAsync();
+            var cards = await db.Cards.Where(x => lists.Select(l => l.Id).Contains(x.ListId) && !x.IsDeleted).OrderBy(x => x.Position).ToListAsync();
+            var result = new List<object>();
+            foreach (var list in lists) result.Add(new { list.Id, list.Name, list.BoardId, list.Position, list.IsArchived, list.CreatedAt, list.UpdatedAt, cards = await KanbanFeatureEndpoints.CardDtos(db, cards.Where(c => c.ListId == list.Id)) });
+            return Results.Ok(Api.Ok(result));
         });
-        boards.MapPost("/{id:int}/lists", async (int id, NameRequest request, AppDbContext db) =>
+        boards.MapPost("/{id:int}/lists", async (int id, NameRequest request, HttpContext http, AppDbContext db) =>
         {
             var position = await db.BoardLists.Where(x => x.BoardId == id).Select(x => (int?)x.Position).MaxAsync() ?? -1;
-            var x = new BoardList { BoardId = id, Name = request.Name.Trim(), Position = position + 1 }; db.BoardLists.Add(x); await db.SaveChangesAsync(); return Results.Created($"/api/lists/{x.Id}", Api.Ok(x));
+            var uid = Api.UserId(http.User)!.Value;
+            var x = new BoardList { BoardId = id, Name = request.Name.Trim(), Position = position + 1, CreatedById = uid, UpdatedById = uid }; db.BoardLists.Add(x); await db.SaveChangesAsync(); return Results.Created($"/api/lists/{x.Id}", Api.Ok(x));
         });
         boards.MapPut("/{id:int}", async (int id, BoardPatch request, HttpContext http, AppDbContext db) =>
         {
             var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (x.OwnerId != Api.UserId(http.User)) return Results.Forbid();
             if (request.Name is not null) x.Name = request.Name; if (request.Description is not null) x.Description = request.Description; if (request.Background is not null) x.Background = request.Background;
             if (request.Visibility is not null) x.Visibility = request.Visibility; if (request.IsStarred.HasValue) x.IsStarred = request.IsStarred.Value; if (request.IsClosed.HasValue) x.IsClosed = request.IsClosed.Value;
+            if (request.AutoNumberCards.HasValue) x.AutoNumberCards = request.AutoNumberCards.Value;
+            x.UpdatedById = Api.UserId(http.User);
             await db.SaveChangesAsync(); return Results.Ok(Api.Ok(BoardDto(x)));
         });
         boards.MapMethods("/{id:int}", ["PATCH"], async (int id, BoardPatch request, HttpContext http, AppDbContext db) =>
         {
-            var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (x.OwnerId != Api.UserId(http.User)) return Results.Forbid(); if (request.IsStarred.HasValue) x.IsStarred = request.IsStarred.Value; await db.SaveChangesAsync(); return Results.Ok(Api.Ok(BoardDto(x)));
+            var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (x.OwnerId != Api.UserId(http.User)) return Results.Forbid(); if (request.IsStarred.HasValue) x.IsStarred = request.IsStarred.Value; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.Ok(Api.Ok(BoardDto(x)));
         });
         boards.MapDelete("/{id:int}", async (int id, HttpContext http, AppDbContext db) => { var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (x.OwnerId != Api.UserId(http.User)) return Results.Forbid(); db.Boards.Remove(x); await db.SaveChangesAsync(); return Results.NoContent(); });
 
-        api.MapPut("/lists/{id:int}", async (int id, ListPatch request, AppDbContext db) => { var x = await db.BoardLists.FindAsync(id); if (x is null) return Results.NotFound(); if (request.Name is not null) x.Name = request.Name; if (request.Position.HasValue) x.Position = request.Position.Value; if (request.IsArchived.HasValue) x.IsArchived = request.IsArchived.Value; await db.SaveChangesAsync(); return Results.Ok(Api.Ok(x)); }).RequireAuthorization();
-        api.MapDelete("/lists/{id:int}", async (int id, AppDbContext db) => { var x = await db.BoardLists.FindAsync(id); if (x is null) return Results.NotFound(); db.BoardLists.Remove(x); await db.SaveChangesAsync(); return Results.NoContent(); }).RequireAuthorization();
+        api.MapPut("/lists/{id:int}", async (int id, ListPatch request, HttpContext http, AppDbContext db) => { var x = await db.BoardLists.FindAsync(id); if (x is null) return Results.NotFound(); if (request.Name is not null) x.Name = request.Name; if (request.Position.HasValue) x.Position = request.Position.Value; if (request.IsArchived.HasValue) x.IsArchived = request.IsArchived.Value; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.Ok(Api.Ok(x)); }).RequireAuthorization();
+        api.MapDelete("/lists/{id:int}", async (int id, HttpContext http, AppDbContext db) => { var x = await db.BoardLists.FindAsync(id); if (x is null) return Results.NotFound(); x.IsDeleted = true; x.DeletedAt = DateTime.UtcNow; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.NoContent(); }).RequireAuthorization();
     }
 
     private static void MapCards(RouteGroupBuilder api)
     {
         var cards = api.MapGroup("/card").RequireAuthorization();
-        cards.MapPost("/", async (CardWrite request, AppDbContext db) =>
+        cards.MapPost("/", async (CardWrite request, HttpContext http, AppDbContext db) =>
         {
             var position = request.Position ?? ((await db.Cards.Where(x => x.ListId == request.ListId).Select(x => (int?)x.Position).MaxAsync() ?? -1) + 1);
-            var x = new Card { Title = request.Title.Trim(), Description = request.Description, ListId = request.ListId, Position = position, DueDate = request.DueDate, TaskId = request.TaskId };
-            db.Cards.Add(x); await db.SaveChangesAsync(); return Results.Created($"/api/card/{x.Id}", Api.Ok(CardDto(x)));
+            var board = await (from list in db.BoardLists join b in db.Boards on list.BoardId equals b.Id where list.Id == request.ListId select b).SingleAsync();
+            var sequence = board.AutoNumberCards ? (await (from card in db.Cards join list in db.BoardLists on card.ListId equals list.Id where list.BoardId == board.Id select card.SequenceNumber).MaxAsync() ?? 0) + 1 : (int?)null;
+            var uid = Api.UserId(http.User)!.Value;
+            var x = new Card { Title = request.Title.Trim(), Description = request.Description, ListId = request.ListId, Position = position, DueDate = request.DueDate, TaskId = request.TaskId, SequenceNumber = sequence, CreatedById = uid, UpdatedById = uid };
+            db.Cards.Add(x); await db.SaveChangesAsync();
+            await KanbanFeatureEndpoints.AddActivity(db, x.Id, Api.UserId(http.User)!.Value, "created this card");
+            return Results.Created($"/api/card/{x.Id}", Api.Ok(await KanbanFeatureEndpoints.CardDto(db, x, false)));
         });
-        cards.MapGet("/{id:int}", async (int id, AppDbContext db) => { var x = await db.Cards.FindAsync(id); return x is null ? Results.NotFound() : Results.Ok(Api.Ok(CardDto(x))); });
-        cards.MapPut("/{id:int}", async (int id, CardPatch request, AppDbContext db) =>
+        cards.MapGet("/{id:int}", async (int id, AppDbContext db) => { var x = await db.Cards.FindAsync(id); return x is null ? Results.NotFound() : Results.Ok(Api.Ok(await KanbanFeatureEndpoints.CardDto(db, x, true))); });
+        cards.MapPut("/{id:int}", async (int id, CardPatch request, HttpContext http, AppDbContext db) =>
         {
             var x = await db.Cards.FindAsync(id); if (x is null) return Results.NotFound(); if (request.Title is not null) x.Title = request.Title; if (request.Description is not null) x.Description = request.Description;
-            if (request.DueDateSet) x.DueDate = request.DueDate; if (request.DueComplete.HasValue) x.DueComplete = request.DueComplete.Value; if (request.IsArchived.HasValue) x.IsArchived = request.IsArchived.Value;
-            await db.SaveChangesAsync(); return Results.Ok(Api.Ok(CardDto(x)));
+            if (request.DueDate.HasValue || request.ClearDueDate || request.DueDateSet) x.DueDate = request.ClearDueDate ? null : request.DueDate; if (request.DueComplete.HasValue) x.DueComplete = request.DueComplete.Value; if (request.IsArchived.HasValue) x.IsArchived = request.IsArchived.Value;
+            if (request.CoverColorSet) x.CoverColor = request.CoverColor; if (request.CoverImageSet) x.CoverImage = request.CoverImage;
+            x.UpdatedById = Api.UserId(http.User);
+            await db.SaveChangesAsync();
+            await KanbanFeatureEndpoints.AddActivity(db, x.Id, Api.UserId(http.User)!.Value, request.IsArchived.HasValue ? (x.IsArchived ? "archived this card" : "restored this card") : "updated this card");
+            return Results.Ok(Api.Ok(await KanbanFeatureEndpoints.CardDto(db, x, false)));
         });
-        cards.MapPost("/{id:int}/move", async (int id, MoveCard request, AppDbContext db) => { var x = await db.Cards.FindAsync(id); if (x is null) return Results.NotFound(); x.ListId = request.ListId; x.Position = request.Position; await db.SaveChangesAsync(); return Results.Ok(Api.Ok(CardDto(x))); });
-        cards.MapDelete("/{id:int}", async (int id, AppDbContext db) => { var x = await db.Cards.FindAsync(id); if (x is null) return Results.NotFound(); db.Cards.Remove(x); await db.SaveChangesAsync(); return Results.NoContent(); });
+        cards.MapPost("/{id:int}/move", async (int id, MoveCard request, HttpContext http, AppDbContext db) =>
+        {
+            var x = await db.Cards.FindAsync(id); if (x is null) return Results.NotFound();
+            var sourceListId = x.ListId;
+            var source = await db.Cards.Where(c => c.ListId == sourceListId && c.Id != id && !c.IsDeleted).OrderBy(c => c.Position).ThenBy(c => c.Id).ToListAsync();
+            var destination = sourceListId == request.ListId ? source : await db.Cards.Where(c => c.ListId == request.ListId && c.Id != id && !c.IsDeleted).OrderBy(c => c.Position).ThenBy(c => c.Id).ToListAsync();
+            var target = Math.Clamp(request.Position, 0, destination.Count); destination.Insert(target, x);
+            x.ListId = request.ListId;
+            x.UpdatedById = Api.UserId(http.User);
+            for (var i = 0; i < destination.Count; i++) destination[i].Position = i;
+            if (sourceListId != request.ListId) for (var i = 0; i < source.Count; i++) source[i].Position = i;
+            await db.SaveChangesAsync();
+            await KanbanFeatureEndpoints.AddActivity(db, x.Id, Api.UserId(http.User)!.Value, "moved this card");
+            return Results.Ok(Api.Ok(await KanbanFeatureEndpoints.CardDto(db, x, false)));
+        });
+        cards.MapDelete("/{id:int}", async (int id, HttpContext http, AppDbContext db) => { var x = await db.Cards.FindAsync(id); if (x is null) return Results.NotFound(); x.IsDeleted = true; x.DeletedAt = DateTime.UtcNow; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); await KanbanFeatureEndpoints.AddActivity(db, x.Id, Api.UserId(http.User)!.Value, "moved this card to trash"); return Results.NoContent(); });
     }
 
     private static void MapTimeEntries(RouteGroupBuilder api)
@@ -245,8 +290,8 @@ public static class SepehrEndpoints
     private static int? Duration(DateTime start, DateTime? end) => end.HasValue ? Math.Max(0, (int)(end.Value - start).TotalSeconds) : null;
     private static object UserDto(User x) => new { x.Id, x.Username, x.Email, x.FirstName, x.LastName, x.Role, x.IsActive, x.CreatedAt, x.UpdatedAt };
     private static object ProjectDto(Project x) => new { x.Id, x.Name, x.Description, x.Color, userId = x.OwnerId, x.IsPublic, x.IsBillable, x.IsArchived, x.CreatedAt, x.UpdatedAt };
-    private static object BoardDto(Board x) => new { x.Id, x.Name, x.Description, x.Background, x.Visibility, userId = x.OwnerId, x.ProjectId, x.IsStarred, x.IsClosed, x.CreatedAt, x.UpdatedAt };
-    private static object CardDto(Card x) => new { x.Id, x.Title, x.Description, x.ListId, x.Position, x.CoverColor, x.DueDate, x.DueComplete, x.IsArchived, x.TaskId, x.CreatedAt, x.UpdatedAt };
+    private static object BoardDto(Board x) => new { x.Id, x.Name, x.Description, x.Background, x.Visibility, x.AutoNumberCards, userId = x.OwnerId, x.ProjectId, x.IsStarred, x.IsClosed, x.CreatedById, x.UpdatedById, x.CreatedAt, x.UpdatedAt };
+    private static object CardDto(Card x) => new { x.Id, x.Title, x.Description, x.ListId, x.Position, x.CoverColor, x.CoverImage, x.SequenceNumber, x.DueDate, x.DueComplete, x.IsArchived, x.TaskId, x.CreatedAt, x.UpdatedAt };
 }
 
 public sealed record LoginRequest(string Username, string Password);
@@ -258,11 +303,11 @@ public sealed record ProjectPatch(string? Name, string? Description, string? Col
 public sealed record TaskWrite(string Name, string? Description, int ProjectId);
 public sealed record TaskPatch(string? Name, string? Description, string? Status);
 public sealed record BoardWrite(string Name, string? Description, string? Background, string? Visibility, int? ProjectId);
-public sealed record BoardPatch(string? Name, string? Description, string? Background, string? Visibility, bool? IsStarred, bool? IsClosed);
+public sealed record BoardPatch(string? Name, string? Description, string? Background, string? Visibility, bool? IsStarred, bool? IsClosed, bool? AutoNumberCards);
 public sealed record NameRequest(string Name);
 public sealed record ListPatch(string? Name, int? Position, bool? IsArchived);
 public sealed record CardWrite(string Title, string? Description, int ListId, int? Position, DateTime? DueDate, int? TaskId);
-public sealed record CardPatch(string? Title, string? Description, DateTime? DueDate, bool DueDateSet, bool? DueComplete, bool? IsArchived);
+public sealed record CardPatch(string? Title, string? Description, DateTime? DueDate, bool DueDateSet, bool ClearDueDate, bool? DueComplete, bool? IsArchived, string? CoverColor, bool CoverColorSet, string? CoverImage, bool CoverImageSet);
 public sealed record MoveCard(int ListId, int Position);
 public sealed record TimeEntryWrite(string? Description, int? ProjectId, int? TaskId, DateTime StartTime, DateTime? EndTime, int? Duration, bool IsBillable);
 

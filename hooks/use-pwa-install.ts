@@ -27,7 +27,15 @@ export function initPwa() {
   })
 
   if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
-    navigator.serviceWorker.register("/sw.js").catch((error) => console.error("Service worker registration failed:", error))
+    navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch((error) => console.error("Service worker registration failed:", error))
+  }
+
+  if ("caches" in window) {
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("awan-")).map((key) => caches.delete(key))))
+      .catch(() => {})
   }
 }
 

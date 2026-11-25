@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SepehrPanel.Api.Models;
 
@@ -66,6 +67,9 @@ public sealed class Board : Entity
     public int? ProjectId { get; set; }
     public bool IsStarred { get; set; }
     public bool IsClosed { get; set; }
+    public bool AutoNumberCards { get; set; }
+    public int? CreatedById { get; set; }
+    public int? UpdatedById { get; set; }
 }
 
 public sealed class BoardMember : Entity
@@ -81,6 +85,10 @@ public sealed class BoardList : Entity
     public int BoardId { get; set; }
     public int Position { get; set; }
     public bool IsArchived { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public int? CreatedById { get; set; }
+    public int? UpdatedById { get; set; }
 }
 
 public sealed class Card : Entity
@@ -90,10 +98,161 @@ public sealed class Card : Entity
     public int ListId { get; set; }
     public int Position { get; set; }
     [MaxLength(30)] public string? CoverColor { get; set; }
+    [MaxLength(1000)] public string? CoverImage { get; set; }
+    public int? SequenceNumber { get; set; }
     public DateTime? DueDate { get; set; }
     public bool DueComplete { get; set; }
     public bool IsArchived { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
     public int? TaskId { get; set; }
+    public int? CreatedById { get; set; }
+    public int? UpdatedById { get; set; }
+}
+
+public sealed class InventoryItem : Entity
+{
+    [MaxLength(80)] public string Sku { get; set; } = "";
+    [MaxLength(80)] public string? AssetTag { get; set; }
+    [MaxLength(240)] public string Name { get; set; } = "";
+    [MaxLength(4000)] public string? Description { get; set; }
+    [MaxLength(120)] public string Category { get; set; } = "Other";
+    [MaxLength(120)] public string? Manufacturer { get; set; }
+    [MaxLength(160)] public string? Model { get; set; }
+    [MaxLength(160)] public string? SerialNumber { get; set; }
+    [MaxLength(40)] public string Status { get; set; } = "Available";
+    [MaxLength(40)] public string Condition { get; set; } = "Good";
+    public decimal Quantity { get; set; }
+    public decimal MinimumQuantity { get; set; }
+    [MaxLength(40)] public string Unit { get; set; } = "pcs";
+    [MaxLength(160)] public string? Location { get; set; }
+    [MaxLength(160)] public string? Department { get; set; }
+    public int? AssignedToUserId { get; set; }
+    [MaxLength(200)] public string? Supplier { get; set; }
+    public DateTime? PurchaseDate { get; set; }
+    [Column(TypeName = "decimal(18,2)")] public decimal? PurchasePrice { get; set; }
+    public DateTime? WarrantyExpiry { get; set; }
+    [MaxLength(1000)] public string? ImageUrl { get; set; }
+    [MaxLength(4000)] public string? Notes { get; set; }
+    public int CreatedById { get; set; }
+    public int UpdatedById { get; set; }
+}
+
+public sealed class InventoryActivity : Entity
+{
+    public int InventoryItemId { get; set; }
+    public int UserId { get; set; }
+    [MaxLength(80)] public string Action { get; set; } = "Updated";
+    [MaxLength(2000)] public string? Details { get; set; }
+}
+
+public sealed class BoardLabel : Entity
+{
+    public int BoardId { get; set; }
+    [MaxLength(100)] public string Name { get; set; } = "";
+    [MaxLength(30)] public string Color { get; set; } = "#579dff";
+}
+
+public sealed class CardLabel : Entity
+{
+    public int CardId { get; set; }
+    public int LabelId { get; set; }
+}
+
+public sealed class CardMember : Entity
+{
+    public int CardId { get; set; }
+    public int UserId { get; set; }
+}
+
+public sealed class Checklist : Entity
+{
+    public int CardId { get; set; }
+    [MaxLength(200)] public string Name { get; set; } = "Checklist";
+    public int Position { get; set; }
+}
+
+public sealed class ChecklistItem : Entity
+{
+    public int ChecklistId { get; set; }
+    [MaxLength(500)] public string Name { get; set; } = "";
+    public bool IsChecked { get; set; }
+    public int Position { get; set; }
+    public DateTime? DueDate { get; set; }
+    public int? AssignedUserId { get; set; }
+}
+
+public sealed class CardComment : Entity
+{
+    public int CardId { get; set; }
+    public int UserId { get; set; }
+    [MaxLength(10000)] public string Content { get; set; } = "";
+}
+
+public sealed class StoredFile : Entity
+{
+    public int UserId { get; set; }
+    [MaxLength(260)] public string Name { get; set; } = "";
+    [MaxLength(150)] public string ContentType { get; set; } = "application/octet-stream";
+    public long Size { get; set; }
+    public byte[] Data { get; set; } = [];
+}
+
+public sealed class CardAttachment : Entity
+{
+    public int CardId { get; set; }
+    public int FileId { get; set; }
+    public int UserId { get; set; }
+    [MaxLength(260)] public string Name { get; set; } = "";
+}
+
+public sealed class CardActivity : Entity
+{
+    public int CardId { get; set; }
+    public int UserId { get; set; }
+    [MaxLength(500)] public string Action { get; set; } = "";
+    [MaxLength(4000)] public string? Data { get; set; }
+}
+
+public sealed class CardLink : Entity
+{
+    public int CardId { get; set; }
+    public int LinkedCardId { get; set; }
+}
+
+public sealed class CardBug : Entity
+{
+    public int CardId { get; set; }
+    [MaxLength(300)] public string Title { get; set; } = "";
+    [Column(TypeName = "longtext")] public string StepsToReproduce { get; set; } = "";
+    [Column(TypeName = "longtext")] public string ExpectedResult { get; set; } = "";
+    [Column(TypeName = "longtext")] public string ActualResult { get; set; } = "";
+    [Column(TypeName = "longtext")] public string? Description { get; set; }
+    [MaxLength(30)] public string Severity { get; set; } = "Medium";
+    [MaxLength(30)] public string? Priority { get; set; }
+    [MaxLength(500)] public string? Environment { get; set; }
+    [MaxLength(30)] public string? Team { get; set; }
+    public int? ReporterId { get; set; }
+    [MaxLength(200)] public string? ReporterName { get; set; }
+    public int? AssigneeId { get; set; }
+    [MaxLength(30)] public string? AssigneeTeam { get; set; }
+    [MaxLength(30)] public string Status { get; set; } = "Open";
+    [MaxLength(40)] public string? Resolution { get; set; }
+}
+
+public sealed class BugHistory : Entity
+{
+    public int BugId { get; set; }
+    public int? UserId { get; set; }
+    [MaxLength(1000)] public string Message { get; set; } = "";
+}
+
+public sealed class BugAttachment : Entity
+{
+    public int BugId { get; set; }
+    public int FileId { get; set; }
+    [MaxLength(260)] public string Name { get; set; } = "";
+    [MaxLength(30)] public string? Status { get; set; }
 }
 
 public sealed class Issue : Entity

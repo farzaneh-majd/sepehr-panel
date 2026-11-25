@@ -1,5 +1,39 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: "IRANSansXV";
+  src: url("/fonts/IRANSansXV.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "RobotoLocal";
+  src: url("/fonts/Roboto-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "RobotoLocal";
+  src: url("/fonts/Roboto-Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "RobotoLocal";
+  src: url("/fonts/Roboto-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+}
+
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; background: #fff; color: #172b4d; font-family: Arial, Helvetica, sans-serif; }
-button, input, select { font: inherit; }
+html, body { margin: 0; min-height: 100%; background: #fff; color: #172b4d; font-family: "RobotoLocal", "IRANSansXV", Arial, sans-serif; font-size: 16px; }
+button, input, select, textarea { font: inherit; }
+[lang="fa"], [dir="rtl"] { font-family: "IRANSansXV", "RobotoLocal", Arial, sans-serif; }

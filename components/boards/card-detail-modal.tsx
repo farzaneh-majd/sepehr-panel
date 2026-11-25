@@ -981,6 +981,12 @@ export function CardDetailModal({
                     {title}
                   </h1>
                 )}
+                <p className="mt-2 text-xs text-gray-500">
+                  <span>Created by {card.createdByName || "Unknown"}</span>
+                  {card.updatedByName && (
+                    <span className="ml-2">/ Last modified by {card.updatedByName}</span>
+                  )}
+                </p>
               </div>
             </div>
 

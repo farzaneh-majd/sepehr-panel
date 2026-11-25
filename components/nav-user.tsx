@@ -148,8 +148,8 @@ export function NavUser({
         <Dialog open={iosHelpOpen} onOpenChange={setIosHelpOpen}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Install Awan</DialogTitle>
-              <DialogDescription>Add Awan to your home screen in Safari:</DialogDescription>
+              <DialogTitle>Install Sepehr Panel</DialogTitle>
+              <DialogDescription>Add Sepehr Panel to your home screen in Safari:</DialogDescription>
             </DialogHeader>
             <ol className="space-y-3 text-sm">
               <li className="flex items-center gap-2">

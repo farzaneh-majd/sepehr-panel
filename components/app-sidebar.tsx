@@ -3,7 +3,6 @@
 import * as React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import {
   FolderKanban,
   LayoutDashboard,
@@ -98,12 +97,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="h-16" asChild>
               <Link href="/dashboard">
-                <div className="flex aspect-square size-14 shrink-0 items-center justify-center">
-                  <Image src="/icons/logo.svg" alt="Awan" width={52} height={52} unoptimized priority className="size-12 object-contain" />
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#0c66e4] text-xl font-bold text-white">
+                  S
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Awan</span>
-                  <span className="truncate text-xs">Time Tracker</span>
+                  <span className="truncate font-medium">Sepehr Panel</span>
+                  <span className="truncate text-xs">Boards & Inventory</span>
                 </div>
               </Link>
             </SidebarMenuButton>

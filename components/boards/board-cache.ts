@@ -6,7 +6,7 @@ export interface BoardMeta {
   background: string;
 }
 
-const META_KEY = "awan:board-meta";
+const META_KEY = "sepehr:board-meta";
 const MAX_META = 100;
 const FRESH_MS = 10_000;
 

@@ -99,7 +99,7 @@ export const theme = createTheme({
       "#AE0000",
     ],
   },
-  fontFamily: "IRANSansXV, Roboto, sans-serif",
+  fontFamily: "RobotoLocal, IRANSansXV, Arial, sans-serif",
   fontSizes: {
     xs: "12px",
     sm: "14px",
@@ -108,7 +108,7 @@ export const theme = createTheme({
     xl: "20px",
   },
   headings: {
-    fontFamily: "IRANSansXV, Roboto, sans-serif",
+    fontFamily: "RobotoLocal, IRANSansXV, Arial, sans-serif",
     sizes: {
       h2: { fontSize: "24px", fontWeight: "700" },
     },

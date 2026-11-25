@@ -23,6 +23,21 @@ public sealed class DatabaseSeeder(AppDbContext db, IPasswordHasher<User> passwo
             await db.SaveChangesAsync(cancellationToken);
         }
 
+        var userOne = await EnsureUser("sepehr.one", "sepehr.one@sepehr.local", "Sepehr", "One", configuration["Seed:UserOnePassword"] ?? "SepehrOne123!", cancellationToken);
+        var userTwo = await EnsureUser("sepehr.two", "sepehr.two@sepehr.local", "Sepehr", "Two", configuration["Seed:UserTwoPassword"] ?? "SepehrTwo123!", cancellationToken);
+
+        if (!await db.InventoryItems.AnyAsync(cancellationToken))
+        {
+            var laptop = new InventoryItem { Sku = "SEP-LAP-001", AssetTag = "AST-1001", Name = "Developer Laptop", Description = "Primary engineering workstation", Category = "Computers", Manufacturer = "Dell", Model = "Latitude 5540", SerialNumber = "DL-5540-001", Status = "Assigned", Condition = "Good", Quantity = 1, MinimumQuantity = 0, Unit = "pcs", Location = "Main Office", Department = "Engineering", AssignedToUserId = userOne.Id, Supplier = "Technology Partner", PurchaseDate = DateTime.UtcNow.Date.AddMonths(-8), PurchasePrice = 1250, WarrantyExpiry = DateTime.UtcNow.Date.AddMonths(16), CreatedById = userOne.Id, UpdatedById = userOne.Id };
+            var headset = new InventoryItem { Sku = "SEP-HDS-001", AssetTag = "AST-1002", Name = "USB Headset", Description = "Noise-cancelling team headset", Category = "Accessories", Manufacturer = "Logitech", Model = "Zone Vibe", SerialNumber = "LV-002", Status = "Available", Condition = "New", Quantity = 8, MinimumQuantity = 2, Unit = "pcs", Location = "IT Storage", Department = "Operations", Supplier = "Office Supplier", PurchaseDate = DateTime.UtcNow.Date.AddMonths(-2), PurchasePrice = 95, WarrantyExpiry = DateTime.UtcNow.Date.AddMonths(22), CreatedById = userTwo.Id, UpdatedById = userTwo.Id };
+            db.InventoryItems.AddRange(laptop, headset);
+            await db.SaveChangesAsync(cancellationToken);
+            db.InventoryActivities.AddRange(
+                new InventoryActivity { InventoryItemId = laptop.Id, UserId = userOne.Id, Action = "Created", Details = "Registered and assigned the engineering laptop" },
+                new InventoryActivity { InventoryItemId = headset.Id, UserId = userTwo.Id, Action = "Created", Details = "Registered initial accessory stock" });
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         if (!await db.Issues.AnyAsync(cancellationToken))
         {
             db.Issues.AddRange(new[]
@@ -41,4 +56,13 @@ public sealed class DatabaseSeeder(AppDbContext db, IPasswordHasher<User> passwo
 
     private static Issue NewIssue(string key, string title, string status, string label, string priority, string assignee, int creatorId) =>
         new() { Key = key, Title = title, Status = status, Label = label, Priority = priority, Assignee = assignee, CreatorId = creatorId };
+
+    private async Task<User> EnsureUser(string username, string email, string firstName, string lastName, string password, CancellationToken cancellationToken)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(x => x.Username == username, cancellationToken);
+        if (user is not null) return user;
+        user = new User { Username = username, Email = email, FirstName = firstName, LastName = lastName, Role = "user", IsActive = true };
+        user.PasswordHash = passwordHasher.HashPassword(user, password);
+        db.Users.Add(user); await db.SaveChangesAsync(cancellationToken); return user;
+    }
 }

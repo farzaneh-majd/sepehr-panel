@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:8.4
+    image: ${MYSQL_IMAGE:-container-registry.oracle.com/mysql/community-server:8.4}
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-sepehr_panel}
@@ -18,7 +18,7 @@ services:
       retries: 20
 
   api:
-    image: ${DOCKERHUB_USERNAME:-local}/sepehr-panel-api:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_REPOSITORY:-farzanehmajd/sepehr-panel}:${API_IMAGE_TAG:-api-latest}
     build: ./backend/SepehrPanel.Api
     restart: unless-stopped
     depends_on:
@@ -29,6 +29,8 @@ services:
       ConnectionStrings__DefaultConnection: Server=mysql;Port=3306;Database=${MYSQL_DATABASE:-sepehr_panel};User=${MYSQL_USER:-sepehr};Password=${MYSQL_PASSWORD:-sepehr_dev_password};
       Jwt__Key: ${JWT_KEY:-local-compose-key-change-before-production-123456789}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-ChangeMe123!}
+      Seed__UserOnePassword: ${SEED_USER_ONE_PASSWORD:-SepehrOne123!}
+      Seed__UserTwoPassword: ${SEED_USER_TWO_PASSWORD:-SepehrTwo123!}
       Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:3000}
       Demo__AllowAnonymousIssues: "true"
       Database__ApplyMigrations: "true"
@@ -36,7 +38,7 @@ services:
       - "5000:8080"
 
   web:
-    image: ${DOCKERHUB_USERNAME:-local}/sepehr-panel-web:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_REPOSITORY:-farzanehmajd/sepehr-panel}:${WEB_IMAGE_TAG:-web-latest}
     build:
       context: .
       args:
@@ -49,7 +51,7 @@ services:
     environment:
       API_INTERNAL_URL: http://api:8080
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-3000}:3000"
 
 volumes:
   sepehr_mysql:

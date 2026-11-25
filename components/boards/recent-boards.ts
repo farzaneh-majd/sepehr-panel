@@ -1,4 +1,4 @@
-const STORAGE_KEY = "awan:recent-boards";
+const STORAGE_KEY = "sepehr:recent-boards";
 const MAX_RECENT = 4;
 
 export function getRecentBoardIds(): number[] {

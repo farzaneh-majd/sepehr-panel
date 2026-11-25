@@ -7,6 +7,8 @@ Sepehr Panel is one portable repository containing:
 - MySQL 8 database
 - Docker Compose configuration for all three services
 
+The inventory workspace includes an equipment overview dashboard, table and grid catalog views, asset tags and serial numbers, categories, team assignment, locations, lifecycle status and condition, supplier and purchasing details, warranty alerts, stock adjustments, and a per-user activity history.
+
 The active issue board persists data through the API. Local browser storage is retained only as an offline fallback.
 
 ## First-time setup
@@ -28,18 +30,18 @@ npm ci
 dotnet restore backend/SepehrPanel.Api/SepehrPanel.Api.csproj
 ```
 
-## Create the initial database migration
+## Create or update the database migration
 
 Migration files are intentionally not generated automatically. Run this once from the repository root and commit the generated files:
 
 ```powershell
-dotnet tool install --global dotnet-ef --version 8.*
+dotnet tool restore
 docker compose up -d mysql
-dotnet ef migrations add InitialCreate --project backend/SepehrPanel.Api/SepehrPanel.Api.csproj --startup-project backend/SepehrPanel.Api/SepehrPanel.Api.csproj --output-dir Data/Migrations
-dotnet ef database update --project backend/SepehrPanel.Api/SepehrPanel.Api.csproj --startup-project backend/SepehrPanel.Api/SepehrPanel.Api.csproj
+dotnet tool run dotnet-ef migrations add KanbanEquipmentInventoryAudit --project backend/SepehrPanel.Api/SepehrPanel.Api.csproj --startup-project backend/SepehrPanel.Api/SepehrPanel.Api.csproj --output-dir Data/Migrations
+dotnet tool run dotnet-ef database update --project backend/SepehrPanel.Api/SepehrPanel.Api.csproj --startup-project backend/SepehrPanel.Api/SepehrPanel.Api.csproj
 ```
 
-After the migration exists, the Docker API automatically applies pending migrations whenever it starts. This makes subsequent installations on other systems automatic.
+The repository pins EF Core CLI 8 locally, so no global EF installation is required. After the migration exists, the Docker API automatically applies pending migrations whenever it starts. This makes subsequent installations on other systems automatic.
 
 ## Run everything with Docker
 
@@ -66,7 +68,13 @@ To intentionally remove the local database volume too:
 docker compose down -v
 ```
 
-The initial administrator username is `admin`. Its first password comes from `SEED_ADMIN_PASSWORD` in `.env`.
+The initial accounts are seeded at startup. Their passwords come from `.env`:
+
+- `admin` / `SEED_ADMIN_PASSWORD`
+- `sepehr.one` / `SEED_USER_ONE_PASSWORD`
+- `sepehr.two` / `SEED_USER_TWO_PASSWORD`
+
+Change all three passwords before a public deployment. The inventory seed data includes one record created by each standard user so attribution is immediately visible after login.
 
 ## Run without Docker
 
@@ -130,7 +138,7 @@ Because the committed migration is applied automatically by the API, no .NET or 
 
 ## Publish images to Docker Hub
 
-Set `DOCKERHUB_USERNAME` and `IMAGE_TAG` in `.env`, then:
+Set `DOCKERHUB_REPOSITORY`, `API_IMAGE_TAG`, and `WEB_IMAGE_TAG` in `.env`, then:
 
 ```powershell
 docker login
@@ -140,8 +148,8 @@ docker compose push api web
 
 This publishes:
 
-- `YOUR_DOCKERHUB_USERNAME/sepehr-panel-api:IMAGE_TAG`
-- `YOUR_DOCKERHUB_USERNAME/sepehr-panel-web:IMAGE_TAG`
+- `farzanehmajd/sepehr-panel:api-latest`
+- `farzanehmajd/sepehr-panel:web-latest`
 
 On another system, copy `docker-compose.yml` and `.env` (or clone the Git repository), then run without rebuilding:
 
@@ -171,6 +179,7 @@ MySQL data is stored in the named Docker volume `sepehr_mysql`. Docker images do
 - `/api/task`
 - `/api/board`
 - `/api/card`
+- `/api/inventory`
 - `/api/time-entry`
 - `/api/user`
 

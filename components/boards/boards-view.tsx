@@ -44,7 +44,9 @@ export function BoardsView() {
   const [query, setQuery] = useState("");
   const [showClosed, setShowClosed] = useState(false);
   const [recentIds, setRecentIds] = useState<number[]>([]);
-  const canCreate = user?.role === "admin" || user?.role === "manager";
+  // The dashboard layout only renders this view for authenticated users, and
+  // the board API allows every authenticated user to create a board.
+  const canCreate = Boolean(user);
 
   useEffect(() => {
     fetchBoards();
@@ -272,10 +274,12 @@ export function BoardsView() {
             You don&apos;t have any boards yet
           </h3>
           <p className="text-muted-foreground mb-4">
-            {canCreate
-              ? "Create your first board and start managing your tasks"
-              : "Boards you are added to will appear here"}
+            Create your first board and start managing your tasks
           </p>
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create your first board
+          </Button>
         </div>
       )}
 

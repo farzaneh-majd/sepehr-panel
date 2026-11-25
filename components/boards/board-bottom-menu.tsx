@@ -15,31 +15,30 @@ const menuItems: { id: BoardView; label: string; shortLabel?: string; icon: Reac
 
 export function BoardBottomMenu({ activeView, onViewChange }: BoardBottomMenuProps) {
   return (
-    <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-1rem)]">
-      <nav className="flex items-center gap-0.5 rounded-xl border border-white/10 bg-[#1d2125]/95 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur">
+    <div className="shrink-0 border-b border-[#dfe1e6] bg-white px-3 sm:px-6">
+      <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Board views">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeView === item.id;
 
           return (
             <Fragment key={item.id}>
-              {item.separated && <span className="mx-1 h-6 w-px shrink-0 bg-white/15" aria-hidden />}
+              {item.separated && <span className="mx-1 h-6 w-px shrink-0 bg-[#dfe1e6]" aria-hidden />}
               <button
                 type="button"
                 onClick={() => onViewChange(item.id)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 rounded-lg px-3 py-1.5 sm:py-2 text-[10px] leading-none sm:text-sm font-semibold whitespace-nowrap transition-colors",
+                  "relative flex h-12 items-center gap-2 whitespace-nowrap px-3 text-[15px] font-medium transition-colors",
                   isActive
-                    ? "bg-[#1c2b41] text-[#579dff]"
-                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                    ? "text-[#0c66e4]"
+                    : "text-[#44546f] hover:bg-[#091e420f] hover:text-[#172b4d]"
                 )}
               >
                 <Icon className="h-4 w-4" />
-                <span className="sm:hidden">{item.shortLabel ?? item.label}</span>
-                <span className="hidden sm:inline">{item.label}</span>
+                <span>{item.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-0.5 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[#579dff]" aria-hidden />
+                  <span className="absolute inset-x-1 bottom-0 h-0.5 rounded-full bg-[#0c66e4]" aria-hidden />
                 )}
               </button>
             </Fragment>

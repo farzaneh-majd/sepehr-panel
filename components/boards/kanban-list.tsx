@@ -156,7 +156,7 @@ export function KanbanList({
     <div
       ref={setNodeRef}
       style={style}
-      className="w-[85vw] max-w-[320px] sm:w-72 flex-shrink-0 snap-center rounded-xl flex flex-col max-h-full bg-[#101204]"
+      className="flex max-h-full w-[85vw] max-w-[320px] flex-shrink-0 snap-center flex-col rounded-lg border border-[#dfe1e6] bg-[#f1f2f4] shadow-sm sm:w-72"
     >
       {/* List Header - Drag Handle */}
       <div 
@@ -183,12 +183,12 @@ export function KanbanList({
               autoFocus
               dir="auto"
               maxLength={100}
-              className="h-7 min-w-0 text-sm font-semibold bg-[#22272b] border-[#3d4449] text-gray-200 focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="h-8 min-w-0 border-[#8590a2] bg-white text-base font-semibold text-[#172b4d] focus-visible:ring-2 focus-visible:ring-[#0c66e4]"
             />
           ) : (
             <h3
               dir="auto"
-              className="text-sm font-semibold text-gray-200 cursor-pointer hover:bg-white/10 px-2 py-1 rounded flex-1 min-w-0 truncate"
+              className="min-w-0 flex-1 cursor-pointer truncate rounded px-2 py-1 text-sm font-semibold uppercase tracking-wide text-[#44546f] hover:bg-[#091e420f]"
               onClick={startEditing}
             >
               {list.name}
@@ -197,13 +197,13 @@ export function KanbanList({
           {/* Card Count Badge */}
           {myCardCount > 0 ? (
             <span
-              className="shrink-0 whitespace-nowrap text-xs rounded px-2 py-0.5 bg-blue-500/15 text-blue-300"
+              className="shrink-0 whitespace-nowrap rounded bg-[#e9f2ff] px-2 py-0.5 text-sm text-[#0c66e4]"
               title={`You're on ${myCardCount} of ${cardCount} cards`}
             >
               {myCardCount} / {cardCount}
             </span>
           ) : (
-            <span className="shrink-0 text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">
+            <span className="shrink-0 rounded bg-[#dfe1e6] px-2 py-0.5 text-sm text-[#626f86]">
               {cardCount}
             </span>
           )}
@@ -211,13 +211,13 @@ export function KanbanList({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-200 hover:bg-white/10">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-[#626f86] hover:bg-[#091e4224] hover:text-[#172b4d]">
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="bg-[#22272b] border-[#3d4449]"
+            className="border-[#dfe1e6] bg-white text-[#172b4d] shadow-lg"
             onCloseAutoFocus={(e) => {
               if (editFromMenuRef.current) {
                 e.preventDefault();
@@ -230,19 +230,19 @@ export function KanbanList({
                 editFromMenuRef.current = true;
                 startEditing();
               }}
-              className="text-gray-200 focus:bg-white/10"
+              className="text-[#172b4d] focus:bg-[#091e420f]"
             >
               <Pencil className="w-4 h-4 mr-2" />
               Edit Name
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-gray-200 focus:bg-white/10">
+            <DropdownMenuItem className="text-[#172b4d] focus:bg-[#091e420f]">
               <Copy className="w-4 h-4 mr-2" />
               Copy List
             </DropdownMenuItem>
             {onArchiveList && (
               <DropdownMenuItem
                 onClick={() => onArchiveList(list.id)}
-                className="text-gray-200 focus:bg-white/10"
+                className="text-[#172b4d] focus:bg-[#091e420f]"
               >
                 <Archive className="w-4 h-4 mr-2" />
                 Archive List
@@ -250,10 +250,10 @@ export function KanbanList({
             )}
             {onDeleteList && (
               <>
-                <DropdownMenuSeparator className="bg-[#3d4449]" />
+                <DropdownMenuSeparator className="bg-[#dfe1e6]" />
                 <DropdownMenuItem
                   onClick={() => onDeleteList(list.id)}
-                  className="text-red-400 focus:bg-red-500/10"
+                  className="text-[#c9372c] focus:bg-[#ffebe6]"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete List
@@ -265,7 +265,7 @@ export function KanbanList({
       </div>
 
       {/* Cards */}
-      <div className="flex-1 min-h-[48px] overflow-y-auto px-2 pt-1 pb-2 space-y-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+      <div className="flex-1 min-h-[48px] space-y-2 overflow-y-auto px-2 pb-2 pt-1 scrollbar-thin scrollbar-thumb-[#b7bdc8] scrollbar-track-transparent">
         <SortableContext
           items={list.cards.map((c) => c.id)}
           strategy={verticalListSortingStrategy}
@@ -284,21 +284,21 @@ export function KanbanList({
       </div>
 
       {/* Add Card */}
-      <div className="p-1.5 border-t border-[#3d4449]/50">
+      <div className="border-t border-[#dfe1e6] p-1.5">
         {isAddingCard ? (
           <div className="space-y-2">
             {/* انتخاب تسک موجود */}
             {unlinkedTasks.length > 0 && (
               <div className="mb-2">
                 {selectedTaskId ? (
-                  <div className="flex items-center gap-2 p-2 bg-blue-900/30 border border-blue-500/30 rounded-lg">
-                    <Clock className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-blue-400 flex-1">Task selected</span>
+                  <div className="flex items-center gap-2 rounded-md border border-[#85b8ff] bg-[#e9f2ff] p-2">
+                    <Clock className="h-4 w-4 text-[#0c66e4]" />
+                    <span className="flex-1 text-sm text-[#0c66e4]">Task selected</span>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={handleClearTaskSelection}
-                      className="h-6 text-xs text-gray-400 hover:text-gray-200 hover:bg-white/10 px-2"
+                      className="h-6 px-2 text-xs text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d]"
                     >
                       Remove
                     </Button>
@@ -309,14 +309,14 @@ export function KanbanList({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="w-full text-sm bg-transparent border-[#3d4449] text-gray-400 hover:text-gray-200 hover:bg-white/5"
+                        className="w-full border-[#8590a2] bg-white text-sm text-[#44546f] hover:bg-[#091e420f] hover:text-[#172b4d]"
                       >
                         <Link className="w-4 h-4 mr-2" />
                         Select existing task
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent 
-                      className="w-72 max-w-[calc(100vw-2rem)] p-0 bg-[#22272b] border-[#3d4449]" 
+                      className="w-72 max-w-[calc(100vw-2rem)] border-[#dfe1e6] bg-white p-0 text-[#172b4d] shadow-lg"
                       align="start"
                     >
                       <UnlinkedTaskPicker tasks={unlinkedTasks} onSelect={handleSelectTask} />
@@ -334,7 +334,7 @@ export function KanbanList({
                 setError(null);
               }}
               placeholder="Enter a title for this card..."
-              className="w-full p-2 text-sm rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#22272b] border border-[#3d4449] text-gray-200 placeholder:text-gray-500"
+              className="w-full resize-none rounded-md border border-[#8590a2] bg-white p-2 text-[15px] text-[#172b4d] placeholder:text-[#626f86] focus:outline-none focus:ring-2 focus:ring-[#0c66e4]"
               rows={3}
               autoFocus={!selectedTaskId}
               onKeyDown={(e) => {
@@ -353,7 +353,7 @@ export function KanbanList({
 
             {/* نمایش خطا */}
             {error && (
-              <div className="text-sm text-red-400 bg-red-500/10 p-2 rounded-lg">
+              <div className="rounded-md bg-[#ffebe6] p-2 text-sm text-[#c9372c]">
                 {error}
               </div>
             )}
@@ -363,7 +363,7 @@ export function KanbanList({
                 size="sm" 
                 onClick={handleAddCard} 
                 disabled={isSubmitting || !newCardTitle.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                className="bg-[#0c66e4] text-white hover:bg-[#0055cc] disabled:opacity-50"
               >
                 {isSubmitting ? "Creating..." : "Add Card"}
               </Button>
@@ -376,7 +376,7 @@ export function KanbanList({
                   setNewCardTitle("");
                   setError(null);
                 }}
-                className="text-gray-400 hover:text-gray-200 hover:bg-white/10"
+                className="text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d]"
               >
                 Cancel
               </Button>
@@ -384,7 +384,7 @@ export function KanbanList({
           </div>
         ) : (
           <button
-            className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-400 hover:bg-white/10 hover:text-gray-200 rounded-lg transition-colors"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-[15px] text-[#44546f] transition-colors hover:bg-[#091e4224] hover:text-[#172b4d]"
             onClick={() => setIsAddingCard(true)}
           >
             <Plus className="w-4 h-4" />
@@ -424,40 +424,40 @@ function UnlinkedTaskPicker({
 
   return (
     <>
-      <div className="p-2 border-b border-[#3d4449] space-y-2">
-        <div className="flex items-center justify-between text-sm text-gray-400">
+      <div className="space-y-2 border-b border-[#dfe1e6] p-2">
+        <div className="flex items-center justify-between text-sm text-[#44546f]">
           <span>Unlinked tasks</span>
-          <span className="text-xs text-gray-500">{totalCount}</span>
+          <span className="text-xs text-[#626f86]">{totalCount}</span>
         </div>
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#626f86]" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search tasks..."
             dir="auto"
             autoFocus
-            className="h-8 pl-8 text-sm bg-[#1d2125] border-[#3d4449] text-gray-200 placeholder:text-gray-500"
+            className="h-8 border-[#8590a2] bg-white pl-8 text-sm text-[#172b4d] placeholder:text-[#626f86]"
           />
         </div>
       </div>
       <div className="max-h-60 overflow-y-auto overscroll-contain">
         {results.length === 0 ? (
-          <div className="px-2 py-3 text-center text-xs text-gray-500">No tasks found</div>
+          <div className="px-2 py-3 text-center text-xs text-[#626f86]">No tasks found</div>
         ) : (
           results.map(({ task }) => (
             <button
               key={task.id}
-              className="w-full p-2 text-sm text-gray-200 hover:bg-white/10 flex items-center gap-2"
+              className="flex w-full items-center gap-2 p-2 text-sm text-[#172b4d] hover:bg-[#091e420f]"
               onClick={() => onSelect(task)}
             >
-              <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <Clock className="h-4 w-4 flex-shrink-0 text-[#626f86]" />
               <span dir="auto" className="truncate flex-1 text-start">{task.name}</span>
             </button>
           ))
         )}
         {totalCount > results.length && (
-          <div className="px-2 py-2 text-center text-xs text-gray-500 border-t border-[#3d4449]">
+          <div className="border-t border-[#dfe1e6] px-2 py-2 text-center text-xs text-[#626f86]">
             Showing {results.length} of {totalCount}. Refine your search to see more.
           </div>
         )}

@@ -96,7 +96,7 @@ export function CardSearch({ lists, onCardSelect, autoFocus, inputClassName }: C
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#626f86]" />
         <Input
           ref={inputRef}
           value={query}
@@ -110,8 +110,8 @@ export function CardSearch({ lists, onCardSelect, autoFocus, inputClassName }: C
           placeholder="Search cards..."
           autoFocus={autoFocus}
           className={cn(
-            "w-64 pl-9 pr-9 bg-black/15 dark:bg-black/15 border-white/20 text-white placeholder:text-white/60 shadow-none selection:bg-blue-500/60 selection:text-white",
-            "hover:bg-black/25 focus-visible:bg-[#22272b] dark:focus-visible:bg-[#22272b] focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500",
+            "w-64 border-[#b7bdc8] bg-[#f7f8f9] pl-9 pr-9 text-[15px] text-[#172b4d] placeholder:text-[#626f86] shadow-none selection:bg-[#85b8ff] selection:text-[#172b4d]",
+            "hover:bg-white focus-visible:border-[#0c66e4] focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-[#0c66e4]",
             inputClassName
           )}
         />
@@ -123,7 +123,7 @@ export function CardSearch({ lists, onCardSelect, autoFocus, inputClassName }: C
               setQuery("");
               inputRef.current?.focus();
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#626f86] hover:text-[#172b4d]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -131,14 +131,14 @@ export function CardSearch({ lists, onCardSelect, autoFocus, inputClassName }: C
       </div>
 
       {isOpen && query && (
-        <div className="absolute top-full right-0 left-0 mt-2 bg-[#1d2125] border border-[#3d4449] rounded-lg shadow-xl overflow-hidden z-50 max-h-96 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto overflow-hidden rounded-lg border border-[#dfe1e6] bg-white shadow-xl">
           {results.length === 0 ? (
-            <div className="p-4 text-center text-gray-400">
+            <div className="p-4 text-center text-[#626f86]">
               No results found
             </div>
           ) : (
             <div>
-              <div className="px-3 py-2 text-xs text-gray-500 border-b border-[#3d4449]">
+              <div className="border-b border-[#dfe1e6] px-3 py-2 text-xs text-[#626f86]">
                 {totalCount > results.length ? `Cards (showing ${results.length} of ${totalCount})` : `Cards (${results.length})`}
               </div>
               {results.map((result, index) => (
@@ -147,13 +147,13 @@ export function CardSearch({ lists, onCardSelect, autoFocus, inputClassName }: C
                   onClick={() => handleSelectCard(result.card)}
                   className={`w-full flex items-start gap-3 p-3 text-left transition-colors ${
                     index === selectedIndex
-                      ? "bg-blue-600/20"
-                      : "hover:bg-white/5"
+                      ? "bg-[#e9f2ff]"
+                      : "hover:bg-[#091e420f]"
                   }`}
                 >
-                  <div className="w-8 h-8 bg-[#22272b] rounded flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-[#f1f2f4]">
                     <svg
-                      className="w-4 h-4 text-gray-400"
+                      className="h-4 w-4 text-[#626f86]"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -178,11 +178,11 @@ export function CardSearch({ lists, onCardSelect, autoFocus, inputClassName }: C
                       </div>
                     )}
 
-                    <div dir="auto" className="text-sm text-gray-200 truncate">
+                    <div dir="auto" className="truncate text-sm text-[#172b4d]">
                       {result.card.title}
                     </div>
 
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    <div className="mt-0.5 text-xs text-[#626f86]">
                       {result.listName}
                     </div>
                   </div>
