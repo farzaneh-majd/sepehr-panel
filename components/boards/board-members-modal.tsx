@@ -26,6 +26,7 @@ export function BoardMembersModal({
   boardId,
   members,
   ownerId,
+  canManage,
   isOpen,
   onClose,
   onMembersChange,
@@ -131,11 +132,11 @@ export function BoardMembersModal({
       <DialogContent className="max-w-md max-h-[85vh] flex flex-col bg-[#1d2125] border-[#3d4449] text-gray-200">
         <DialogHeader>
           <DialogTitle>Board Members</DialogTitle>
-          <DialogDescription>Manage board members and permissions</DialogDescription>
+          <DialogDescription>{canManage ? "Manage board members and permissions" : "View board members"}</DialogDescription>
         </DialogHeader>
 
         {/* Search Users */}
-        <div className="relative">
+        {canManage && <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             value={searchQuery}
@@ -154,7 +155,7 @@ export function BoardMembersModal({
               <X className="w-4 h-4" />
             </button>
           )}
-        </div>
+        </div>}
 
         {/* Search Results */}
         {searchResults.length > 0 && (
@@ -213,7 +214,7 @@ export function BoardMembersModal({
                 <div className="text-xs text-gray-500 truncate">{member.email}</div>
               </div>
 
-              {member.role !== "owner" && (
+              {canManage && member.role !== "owner" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

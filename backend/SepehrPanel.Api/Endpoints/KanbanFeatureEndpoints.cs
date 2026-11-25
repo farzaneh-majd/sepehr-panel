@@ -21,8 +21,9 @@ public static class KanbanFeatureEndpoints
     {
         var boards = api.MapGroup("/board").RequireAuthorization();
 
-        boards.MapGet("/{id:int}/members/search", async (int id, string? q, AppDbContext db) =>
+        boards.MapGet("/{id:int}/members/search", async (int id, string? q, HttpContext http, AppDbContext db) =>
         {
+            if (!await Api.CanManageBoard(db, id, http.User)) return Results.Forbid();
             var memberIds = db.BoardMembers.Where(x => x.BoardId == id).Select(x => x.UserId);
             var query = db.Users.Where(x => x.IsActive && !memberIds.Contains(x.Id));
             if (!string.IsNullOrWhiteSpace(q))
@@ -38,8 +39,9 @@ public static class KanbanFeatureEndpoints
             return Results.Ok(Api.Ok(users));
         });
 
-        boards.MapPost("/{id:int}/members", async (int id, BoardMemberWrite request, AppDbContext db) =>
+        boards.MapPost("/{id:int}/members", async (int id, BoardMemberWrite request, HttpContext http, AppDbContext db) =>
         {
+            if (!await Api.CanManageBoard(db, id, http.User)) return Results.Forbid();
             if (!await db.Boards.AnyAsync(x => x.Id == id) || !await db.Users.AnyAsync(x => x.Id == request.UserId && x.IsActive))
                 return Results.NotFound();
             var existing = await db.BoardMembers.SingleOrDefaultAsync(x => x.BoardId == id && x.UserId == request.UserId);
@@ -51,8 +53,9 @@ public static class KanbanFeatureEndpoints
             return Results.Created($"/api/board/{id}/members/{member.Id}", Api.Ok(new { member.Id, member.UserId, member.Role, user!.FirstName, user.LastName, user.Email, user.Username, avatarId = (int?)null, avatarUrl = (string?)null }));
         });
 
-        boards.MapPut("/{id:int}/members/{memberId:int}", async (int id, int memberId, BoardMemberRole request, AppDbContext db) =>
+        boards.MapPut("/{id:int}/members/{memberId:int}", async (int id, int memberId, BoardMemberRole request, HttpContext http, AppDbContext db) =>
         {
+            if (!await Api.CanManageBoard(db, id, http.User)) return Results.Forbid();
             var member = await db.BoardMembers.SingleOrDefaultAsync(x => x.Id == memberId && x.BoardId == id);
             if (member is null) return Results.NotFound();
             if (member.Role == "owner") return Results.BadRequest(new { message = "The board owner's role cannot be changed." });
@@ -61,8 +64,9 @@ public static class KanbanFeatureEndpoints
             return Results.Ok(Api.Ok(await MemberDto(db, member)));
         });
 
-        boards.MapDelete("/{id:int}/members/{memberId:int}", async (int id, int memberId, AppDbContext db) =>
+        boards.MapDelete("/{id:int}/members/{memberId:int}", async (int id, int memberId, HttpContext http, AppDbContext db) =>
         {
+            if (!await Api.CanManageBoard(db, id, http.User)) return Results.Forbid();
             var member = await db.BoardMembers.SingleOrDefaultAsync(x => x.Id == memberId && x.BoardId == id);
             if (member is null) return Results.NotFound();
             if (member.Role == "owner") return Results.BadRequest(new { message = "The board owner cannot be removed." });

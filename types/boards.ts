@@ -59,6 +59,7 @@ export interface BoardMembersModalProps {
   boardId: number
   members: BoardMember[]
   ownerId: number
+  canManage: boolean
   isOpen: boolean
   onClose: () => void
   onMembersChange: (members: BoardMember[]) => void

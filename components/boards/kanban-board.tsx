@@ -296,11 +296,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
   // Check if current user is admin or owner
   const isAdmin = () => {
     if (!currentUserId || !board) return false;
-    // Owner is always admin
-    if (board.userId === currentUserId) return true;
-    // Check if user is admin in board members
-    const member = boardMembers.find((m) => m.userId === currentUserId);
-    return member?.role === "admin" || member?.role === "owner";
+    return currentUser?.role === "admin" || board.userId === currentUserId;
   };
 
   const canDelete = isAdmin();
@@ -791,14 +787,14 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
         style={{ borderTopColor: board.background }}
       >
         <div className="flex items-center gap-1 sm:gap-3 min-w-0">
-          <Button
+          {isAdmin() && <Button
             variant="ghost"
             size="icon"
             className="shrink-0 text-[#44546f] hover:bg-[#091e4224] hover:text-[#172b4d]"
             onClick={() => router.push("/dashboard/boards")}
           >
             <ArrowLeft className="w-5 h-5" />
-          </Button>
+          </Button>}
           <h1 dir="auto" className="truncate text-lg font-semibold text-[#172b4d] sm:text-xl">{board.name}</h1>
         </div>
         {/* Card Search */}
@@ -1145,6 +1141,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
         boardId={boardId}
         members={boardMembers}
         ownerId={board.userId}
+        canManage={isAdmin()}
         isOpen={showMembersModal}
         onClose={() => setShowMembersModal(false)}
         onMembersChange={(newMembers) => {
@@ -1162,7 +1159,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
           onClose={() => setShowEditModal(false)}
           onUpdate={updateBoard}
           onDelete={deleteBoard}
-          canDelete={!!currentUserId && board.userId === currentUserId}
+          canDelete={isAdmin()}
           canEdit={isAdmin()}
         />
       )}

@@ -26,6 +26,29 @@ public sealed class DatabaseSeeder(AppDbContext db, IPasswordHasher<User> passwo
         var userOne = await EnsureUser("sepehr.one", "sepehr.one@sepehr.local", "Sepehr", "One", configuration["Seed:UserOnePassword"] ?? "SepehrOne123!", cancellationToken);
         var userTwo = await EnsureUser("sepehr.two", "sepehr.two@sepehr.local", "Sepehr", "Two", configuration["Seed:UserTwoPassword"] ?? "SepehrTwo123!", cancellationToken);
 
+        var teamPassword = configuration["Seed:TeamPassword"] ?? "123456789";
+        var teamUsers = new[]
+        {
+            ("SinaSafizadeh", "Sina", "Safizadeh", "user"),
+            ("AmirhosseinKhodabakhsh", "Amirhossein", "Khodabakhsh", "admin"),
+            ("AliTorkamanasadi", "Ali", "Torkamanasadi", "admin"),
+            ("ParhamMonfared", "Parham", "Monfared", "user"),
+            ("MohammadMahdavi", "Mohammad", "Mahdavi", "user"),
+            ("FarzanehMajd", "Farzaneh", "Majd", "admin"),
+            ("AliMoradi83", "Ali", "Moradi 83", "user"),
+            ("AliMoradi81", "Ali", "Moradi 81", "user"),
+            ("DanialRezaei", "Danial", "Rezaei", "user"),
+            ("RohamKavei", "Roham", "Kavei", "user"),
+            ("MohammadNazerieh", "Mohammad", "Nazerieh", "user"),
+            ("SarinaKashani", "Sarina", "Kashani", "user"),
+            ("AmirPouyanniya", "Amir", "Pouyanniya", "user"),
+            ("AmirhosseinGhotbabadi", "Amirhossein", "Ghotbabadi", "user")
+        };
+        foreach (var (username, firstName, lastName, role) in teamUsers)
+        {
+            await EnsureUser(username, $"{username.ToLowerInvariant()}@local.sepehr", firstName, lastName, teamPassword, cancellationToken, role);
+        }
+
         if (!await db.InventoryItems.AnyAsync(cancellationToken))
         {
             var laptop = new InventoryItem { Sku = "SEP-LAP-001", AssetTag = "AST-1001", Name = "Developer Laptop", Description = "Primary engineering workstation", Category = "Computers", Manufacturer = "Dell", Model = "Latitude 5540", SerialNumber = "DL-5540-001", Status = "Assigned", Condition = "Good", Quantity = 1, MinimumQuantity = 0, Unit = "pcs", Location = "Main Office", Department = "Engineering", AssignedToUserId = userOne.Id, Supplier = "Technology Partner", PurchaseDate = DateTime.UtcNow.Date.AddMonths(-8), PurchasePrice = 1250, WarrantyExpiry = DateTime.UtcNow.Date.AddMonths(16), CreatedById = userOne.Id, UpdatedById = userOne.Id };
@@ -57,11 +80,11 @@ public sealed class DatabaseSeeder(AppDbContext db, IPasswordHasher<User> passwo
     private static Issue NewIssue(string key, string title, string status, string label, string priority, string assignee, int creatorId) =>
         new() { Key = key, Title = title, Status = status, Label = label, Priority = priority, Assignee = assignee, CreatorId = creatorId };
 
-    private async Task<User> EnsureUser(string username, string email, string firstName, string lastName, string password, CancellationToken cancellationToken)
+    private async Task<User> EnsureUser(string username, string email, string firstName, string lastName, string password, CancellationToken cancellationToken, string role = "user")
     {
         var user = await db.Users.FirstOrDefaultAsync(x => x.Username == username, cancellationToken);
         if (user is not null) return user;
-        user = new User { Username = username, Email = email, FirstName = firstName, LastName = lastName, Role = "user", IsActive = true };
+        user = new User { Username = username, Email = email, FirstName = firstName, LastName = lastName, Role = role, IsActive = true };
         user.PasswordHash = passwordHasher.HashPassword(user, password);
         db.Users.Add(user); await db.SaveChangesAsync(cancellationToken); return user;
     }

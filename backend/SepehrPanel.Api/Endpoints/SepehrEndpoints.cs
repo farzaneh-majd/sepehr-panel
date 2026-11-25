@@ -108,6 +108,44 @@ public static class SepehrEndpoints
             user.PasswordHash = hasher.HashPassword(user, request.Password); db.Users.Add(user); await db.SaveChangesAsync();
             return Results.Created($"/api/user/{user.Id}", Api.Ok(UserDto(user)));
         }).RequireAuthorization(policy => policy.RequireRole("admin"));
+
+        api.MapPut("/user/profile", async (ProfileUpdate request, HttpContext http, AppDbContext db) =>
+        {
+            var user = await db.Users.FindAsync(Api.UserId(http.User));
+            if (user is null) return Results.Unauthorized();
+
+            var username = request.Username.Trim();
+            if (username.Length is < 3 or > 80 || !username.All(character => char.IsLetterOrDigit(character) || character is '.' or '_' or '-'))
+                return Results.BadRequest(new { message = "Username must be 3-80 characters and contain only letters, numbers, dots, underscores, or hyphens." });
+            if (await db.Users.AnyAsync(x => x.Id != user.Id && x.Username.ToLower() == username.ToLower()))
+                return Results.Conflict(new { message = "That username is already in use." });
+
+            user.Username = username;
+            user.FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? null : request.FirstName.Trim();
+            user.LastName = string.IsNullOrWhiteSpace(request.LastName) ? null : request.LastName.Trim();
+            user.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return Results.Ok(Api.Ok(UserDto(user)));
+        }).RequireAuthorization();
+
+        api.MapPut("/user/password", async (PasswordUpdate request, HttpContext http, AppDbContext db, IPasswordHasher<User> hasher) =>
+        {
+            var user = await db.Users.FindAsync(Api.UserId(http.User));
+            if (user is null) return Results.Unauthorized();
+            if (hasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword) == PasswordVerificationResult.Failed)
+                return Results.BadRequest(new { message = "Current password is incorrect." });
+            if (request.NewPassword.Length < 8)
+                return Results.BadRequest(new { message = "New password must be at least 8 characters." });
+            if (request.NewPassword == request.CurrentPassword)
+                return Results.BadRequest(new { message = "New password must be different from the current password." });
+
+            user.PasswordHash = hasher.HashPassword(user, request.NewPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+            var activeRefreshTokens = await db.RefreshTokens.Where(x => x.UserId == user.Id && x.RevokedAt == null).ToListAsync();
+            foreach (var token in activeRefreshTokens) token.RevokedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return Results.Ok(Api.Ok(new { message = "Password changed. Sign in again with your new password." }));
+        }).RequireAuthorization();
     }
 
     private static void MapProjects(RouteGroupBuilder api)
@@ -168,7 +206,9 @@ public static class SepehrEndpoints
         boards.MapGet("/", async (HttpContext http, AppDbContext db) =>
         {
             var uid = Api.UserId(http.User)!.Value;
-            var rows = await db.Boards.Where(x => x.OwnerId == uid || db.BoardMembers.Any(m => m.BoardId == x.Id && m.UserId == uid)).OrderByDescending(x => x.UpdatedAt).ToListAsync();
+            var query = db.Boards.AsQueryable();
+            if (!http.User.IsInRole("admin")) query = query.Where(x => x.OwnerId == uid || db.BoardMembers.Any(m => m.BoardId == x.Id && m.UserId == uid));
+            var rows = await query.OrderByDescending(x => x.UpdatedAt).ToListAsync();
             return Results.Ok(Api.Ok(rows.Select(BoardDto)));
         });
         boards.MapPost("/", async (BoardWrite request, HttpContext http, AppDbContext db) =>
@@ -188,15 +228,17 @@ public static class SepehrEndpoints
             await db.SaveChangesAsync();
             return Results.Created($"/api/board/{x.Id}", Api.Ok(BoardDto(x)));
         });
-        boards.MapGet("/{id:int}/detail", async (int id, AppDbContext db) =>
+        boards.MapGet("/{id:int}/detail", async (int id, HttpContext http, AppDbContext db) =>
         {
             var board = await db.Boards.FindAsync(id); if (board is null) return Results.NotFound();
+            if (!await Api.CanAccessBoard(db, id, http.User)) return Results.Forbid();
             var members = await KanbanFeatureEndpoints.BoardMembers(db, id, board.OwnerId);
             var labels = await KanbanFeatureEndpoints.BoardLabels(db, id);
             return Results.Ok(Api.Ok(new { board.Id, board.Name, board.Description, board.Background, board.Visibility, board.AutoNumberCards, userId = board.OwnerId, board.ProjectId, board.IsStarred, board.IsClosed, board.CreatedById, board.UpdatedById, board.CreatedAt, board.UpdatedAt, members, labels }));
         });
-        boards.MapGet("/{id:int}/lists", async (int id, AppDbContext db) =>
+        boards.MapGet("/{id:int}/lists", async (int id, HttpContext http, AppDbContext db) =>
         {
+            if (!await Api.CanAccessBoard(db, id, http.User)) return Results.Forbid();
             var lists = await db.BoardLists.Where(x => x.BoardId == id && !x.IsDeleted).OrderBy(x => x.Position).ToListAsync();
             var cards = await db.Cards.Where(x => lists.Select(l => l.Id).Contains(x.ListId) && !x.IsDeleted).OrderBy(x => x.Position).ToListAsync();
             var result = new List<object>();
@@ -205,13 +247,14 @@ public static class SepehrEndpoints
         });
         boards.MapPost("/{id:int}/lists", async (int id, NameRequest request, HttpContext http, AppDbContext db) =>
         {
+            if (!await Api.CanAccessBoard(db, id, http.User)) return Results.Forbid();
             var position = await db.BoardLists.Where(x => x.BoardId == id).Select(x => (int?)x.Position).MaxAsync() ?? -1;
             var uid = Api.UserId(http.User)!.Value;
             var x = new BoardList { BoardId = id, Name = request.Name.Trim(), Position = position + 1, CreatedById = uid, UpdatedById = uid }; db.BoardLists.Add(x); await db.SaveChangesAsync(); return Results.Created($"/api/lists/{x.Id}", Api.Ok(x));
         });
         boards.MapPut("/{id:int}", async (int id, BoardPatch request, HttpContext http, AppDbContext db) =>
         {
-            var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (x.OwnerId != Api.UserId(http.User)) return Results.Forbid();
+            var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (!await Api.CanManageBoard(db, id, http.User)) return Results.Forbid();
             if (request.Name is not null) x.Name = request.Name; if (request.Description is not null) x.Description = request.Description; if (request.Background is not null) x.Background = request.Background;
             if (request.Visibility is not null) x.Visibility = request.Visibility; if (request.IsStarred.HasValue) x.IsStarred = request.IsStarred.Value; if (request.IsClosed.HasValue) x.IsClosed = request.IsClosed.Value;
             if (request.AutoNumberCards.HasValue) x.AutoNumberCards = request.AutoNumberCards.Value;
@@ -220,12 +263,12 @@ public static class SepehrEndpoints
         });
         boards.MapMethods("/{id:int}", ["PATCH"], async (int id, BoardPatch request, HttpContext http, AppDbContext db) =>
         {
-            var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (x.OwnerId != Api.UserId(http.User)) return Results.Forbid(); if (request.IsStarred.HasValue) x.IsStarred = request.IsStarred.Value; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.Ok(Api.Ok(BoardDto(x)));
+            var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (!await Api.CanManageBoard(db, id, http.User)) return Results.Forbid(); if (request.IsStarred.HasValue) x.IsStarred = request.IsStarred.Value; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.Ok(Api.Ok(BoardDto(x)));
         });
-        boards.MapDelete("/{id:int}", async (int id, HttpContext http, AppDbContext db) => { var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (x.OwnerId != Api.UserId(http.User)) return Results.Forbid(); db.Boards.Remove(x); await db.SaveChangesAsync(); return Results.NoContent(); });
+        boards.MapDelete("/{id:int}", async (int id, HttpContext http, AppDbContext db) => { var x = await db.Boards.FindAsync(id); if (x is null) return Results.NotFound(); if (!await Api.CanManageBoard(db, id, http.User)) return Results.Forbid(); db.Boards.Remove(x); await db.SaveChangesAsync(); return Results.NoContent(); });
 
         api.MapPut("/lists/{id:int}", async (int id, ListPatch request, HttpContext http, AppDbContext db) => { var x = await db.BoardLists.FindAsync(id); if (x is null) return Results.NotFound(); if (request.Name is not null) x.Name = request.Name; if (request.Position.HasValue) x.Position = request.Position.Value; if (request.IsArchived.HasValue) x.IsArchived = request.IsArchived.Value; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.Ok(Api.Ok(x)); }).RequireAuthorization();
-        api.MapDelete("/lists/{id:int}", async (int id, HttpContext http, AppDbContext db) => { var x = await db.BoardLists.FindAsync(id); if (x is null) return Results.NotFound(); x.IsDeleted = true; x.DeletedAt = DateTime.UtcNow; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.NoContent(); }).RequireAuthorization();
+        api.MapDelete("/lists/{id:int}", async (int id, HttpContext http, AppDbContext db) => { var x = await db.BoardLists.FindAsync(id); if (x is null) return Results.NotFound(); if (!await Api.CanManageBoard(db, x.BoardId, http.User)) return Results.Forbid(); x.IsDeleted = true; x.DeletedAt = DateTime.UtcNow; x.UpdatedById = Api.UserId(http.User); await db.SaveChangesAsync(); return Results.NoContent(); }).RequireAuthorization();
     }
 
     private static void MapCards(RouteGroupBuilder api)
@@ -297,6 +340,8 @@ public static class SepehrEndpoints
 public sealed record LoginRequest(string Username, string Password);
 public sealed record RefreshRequest(string Refresh);
 public sealed record UserCreate(string Username, string Email, string Password, string? FirstName, string? LastName, string? Role);
+public sealed record ProfileUpdate(string Username, string? FirstName, string? LastName);
+public sealed record PasswordUpdate(string CurrentPassword, string NewPassword);
 public sealed record IssueWrite(string Title, string Status, string Label, string Priority, string Assignee);
 public sealed record ProjectWrite(string Name, string? Description, string? Color, bool IsPublic = true, bool IsBillable = true, bool IsArchived = false);
 public sealed record ProjectPatch(string? Name, string? Description, string? Color, bool? IsPublic, bool? IsBillable, bool? IsArchived);
@@ -322,4 +367,19 @@ internal static class Api
     public static object Ok(object? result) => new { result };
     public static int? UserId(ClaimsPrincipal user) =>
         int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+
+    public static async Task<bool> CanAccessBoard(AppDbContext db, int boardId, ClaimsPrincipal user)
+    {
+        if (user.IsInRole("admin")) return true;
+        var userId = UserId(user);
+        return userId.HasValue && await db.Boards.AnyAsync(x => x.Id == boardId &&
+            (x.OwnerId == userId.Value || db.BoardMembers.Any(member => member.BoardId == boardId && member.UserId == userId.Value)));
+    }
+
+    public static async Task<bool> CanManageBoard(AppDbContext db, int boardId, ClaimsPrincipal user)
+    {
+        if (user.IsInRole("admin")) return true;
+        var userId = UserId(user);
+        return userId.HasValue && await db.Boards.AnyAsync(x => x.Id == boardId && x.OwnerId == userId.Value);
+    }
 }

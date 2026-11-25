@@ -6,6 +6,7 @@ import axiosInstance from "@/lib/axios-config"
 
 interface UserData {
   id?: number
+  username?: string
   firstName?: string
   first_name?: string
   lastName?: string

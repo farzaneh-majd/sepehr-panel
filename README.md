@@ -160,6 +160,24 @@ docker compose up -d --no-build
 
 MySQL data is stored in the named Docker volume `sepehr_mysql`. Docker images do not contain your database records; use `mysqldump` and restore when moving existing production data.
 
+### Restore a private database snapshot
+
+Keep database snapshots outside public Git repositories and container images. After copying a trusted `sepehr-panel-*.zip` snapshot into the project on the destination computer, extract it and restore the SQL file before starting the API:
+
+```powershell
+docker compose up -d mysql
+docker compose exec -T mysql sh -lc 'until mysqladmin ping -h localhost -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent; do sleep 2; done'
+$snapshot = Get-ChildItem .\backups\sepehr-panel-*.zip | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Expand-Archive $snapshot.FullName -DestinationPath .\backups\restore -Force
+$sql = Get-ChildItem .\backups\restore\*.sql | Select-Object -First 1
+$mysqlContainer = docker compose ps -q mysql
+docker cp $sql.FullName "${mysqlContainer}:/tmp/sepehr-panel-backup.sql"
+docker compose exec -T mysql sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < /tmp/sepehr-panel-backup.sql'
+docker compose up -d
+```
+
+Use `docker compose ps -q mysql` if the MySQL container has a different generated name. Treat snapshots as secrets: they contain account records and password hashes.
+
 ## Production notes
 
 - Put the web service behind HTTPS using a reverse proxy or managed hosting platform.

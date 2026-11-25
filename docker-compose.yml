@@ -31,6 +31,7 @@ services:
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-ChangeMe123!}
       Seed__UserOnePassword: ${SEED_USER_ONE_PASSWORD:-SepehrOne123!}
       Seed__UserTwoPassword: ${SEED_USER_TWO_PASSWORD:-SepehrTwo123!}
+      Seed__TeamPassword: ${SEED_TEAM_PASSWORD:-123456789}
       Cors__Origins__0: ${WEB_ORIGIN:-http://localhost:3000}
       Demo__AllowAnonymousIssues: "true"
       Database__ApplyMigrations: "true"

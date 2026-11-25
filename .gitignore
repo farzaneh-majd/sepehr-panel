@@ -40,6 +40,9 @@ yarn-error.log*
 backend/**/bin/
 backend/**/obj/
 
+# Local database snapshots (contain private user data and password hashes)
+/backups/
+
 # vercel
 .vercel
 
