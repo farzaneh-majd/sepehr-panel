@@ -1,5 +1,18 @@
 # Sepehr Panel
 
+## One-click Windows startup
+
+Windows users can double-click `Start-Sepehr-Panel.bat` in the project folder. The launcher:
+
+- starts Docker Desktop when necessary;
+- creates a private `.env` configuration on the first run without overwriting an existing one;
+- checks GitHub for updates when Git is available;
+- pulls and starts MySQL, the backend API, and the web application;
+- waits for the services to become ready; and
+- opens `http://localhost:WEB_PORT` in Google Chrome, or the default browser when Chrome is unavailable.
+
+Docker Desktop must be installed once on the computer. Normal launches and `docker compose down` preserve the local MySQL data. Never use `docker compose down -v` unless the database should be permanently removed.
+
 Sepehr Panel is one portable repository containing:
 
 - Next.js 16 frontend
