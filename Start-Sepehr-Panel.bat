@@ -70,6 +70,7 @@ if not exist ".env" (
 for /f "usebackq tokens=1,* delims==" %%A in (".env") do (
     if /I "%%A"=="WEB_PORT" set "WEB_PORT=%%B"
 )
+call :ensure_web_port
 set "APP_URL=http://localhost:%WEB_PORT%"
 
 if "%SKIP_UPDATE%"=="1" (
@@ -148,3 +149,19 @@ echo Startup was not completed. The database volume was not deleted.
 echo Press any key to close this window.
 pause >nul
 exit /b 1
+
+:ensure_web_port
+set "WEB_CONTAINER_RUNNING="
+for /f "delims=" %%I in ('docker compose ps --status running -q web 2^>nul') do set "WEB_CONTAINER_RUNNING=1"
+if defined WEB_CONTAINER_RUNNING exit /b 0
+
+set "AVAILABLE_WEB_PORT="
+for /f "delims=" %%P in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$busy=[System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners().Port; $port=[int]$env:WEB_PORT; while ($busy -contains $port) { $port++ }; Write-Output $port"') do set "AVAILABLE_WEB_PORT=%%P"
+if not defined AVAILABLE_WEB_PORT exit /b 0
+if "%AVAILABLE_WEB_PORT%"=="%WEB_PORT%" exit /b 0
+
+echo       Port %WEB_PORT% is already in use. Using port %AVAILABLE_WEB_PORT% instead.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$text=Get-Content '.env' -Raw; $text=$text -replace '(?m)^WEB_PORT=.*$',('WEB_PORT='+$env:AVAILABLE_WEB_PORT) -replace '(?m)^WEB_ORIGIN=.*$',('WEB_ORIGIN=http://localhost:'+$env:AVAILABLE_WEB_PORT); Set-Content '.env' $text -Encoding ASCII"
+if errorlevel 1 exit /b 0
+set "WEB_PORT=%AVAILABLE_WEB_PORT%"
+exit /b 0

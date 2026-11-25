@@ -6,6 +6,7 @@ Windows users can double-click `Start-Sepehr-Panel.bat` in the project folder. T
 
 - starts Docker Desktop when necessary;
 - creates a private `.env` configuration on the first run without overwriting an existing one;
+- automatically selects and remembers a free web port when the configured port is occupied;
 - checks GitHub for updates when Git is available;
 - pulls and starts MySQL, the backend API, and the web application;
 - waits for the services to become ready; and
