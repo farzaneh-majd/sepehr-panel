@@ -1,9 +1,30 @@
 @echo off
 setlocal EnableExtensions
+
+if /I "%SEPEHR_LAUNCHER_COPY%"=="1" goto :launcher_main
+goto :run_safe_copy
+
+:run_safe_copy
+set "SEPEHR_PROJECT_DIR=%~dp0"
+set "SEPEHR_TEMP_LAUNCHER=%TEMP%\SepehrPanelLauncher-%RANDOM%-%RANDOM%.bat"
+copy /y "%~f0" "%SEPEHR_TEMP_LAUNCHER%" >nul
+if errorlevel 1 (
+    echo [ERROR] The launcher could not create its temporary working copy.
+    echo Please check access to your Windows temporary folder and try again.
+    pause >nul
+    exit /b 1
+)
+set "SEPEHR_LAUNCHER_COPY=1"
+call "%SEPEHR_TEMP_LAUNCHER%" %*
+set "SEPEHR_LAUNCHER_EXIT=%ERRORLEVEL%"
+del /q "%SEPEHR_TEMP_LAUNCHER%" >nul 2>&1
+exit /b %SEPEHR_LAUNCHER_EXIT%
+
+:launcher_main
 title Sepehr Panel Launcher
 color 0B
 
-cd /d "%~dp0"
+cd /d "%SEPEHR_PROJECT_DIR%"
 set "APP_URL=http://localhost:3000"
 set "WEB_PORT=3000"
 set "NO_BROWSER=0"
