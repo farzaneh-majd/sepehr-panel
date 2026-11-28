@@ -8,7 +8,7 @@ Windows users can double-click `Start-Sepehr-Panel.bat` in the project folder. T
 - creates a private `.env` configuration on the first run without overwriting an existing one;
 - automatically selects and remembers a free web port when the configured port is occupied;
 - checks GitHub for updates when Git is available;
-- securely prompts for a one-time Docker Hub login and retries when private image access is denied;
+- treats image-update errors as non-blocking and starts locally cached images immediately;
 - pulls and starts MySQL, the backend API, and the web application;
 - waits for the services to become ready; and
 - opens `http://localhost:WEB_PORT` in Google Chrome, or the default browser when Chrome is unavailable.
@@ -36,7 +36,7 @@ Create your private environment file:
 Copy-Item .env.example .env
 ```
 
-Edit `.env` and replace every password, the JWT key, and `DOCKERHUB_USERNAME`.
+Edit `.env` and replace every password and the JWT key.
 
 Install frontend and backend dependencies:
 
