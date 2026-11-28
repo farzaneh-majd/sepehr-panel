@@ -8,6 +8,7 @@ Windows users can double-click `Start-Sepehr-Panel.bat` in the project folder. T
 - creates a private `.env` configuration on the first run without overwriting an existing one;
 - automatically selects and remembers a free web port when the configured port is occupied;
 - checks GitHub for updates when Git is available;
+- securely prompts for a one-time Docker Hub login and retries when private image access is denied;
 - pulls and starts MySQL, the backend API, and the web application;
 - waits for the services to become ready; and
 - opens `http://localhost:WEB_PORT` in Google Chrome, or the default browser when Chrome is unavailable.

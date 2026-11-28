@@ -27,6 +27,7 @@ color 0B
 cd /d "%SEPEHR_PROJECT_DIR%"
 set "APP_URL=http://localhost:3000"
 set "WEB_PORT=3000"
+set "DOCKERHUB_USERNAME=farzanehmajd"
 set "NO_BROWSER=0"
 set "SKIP_UPDATE=0"
 
@@ -80,6 +81,7 @@ if not exist ".env" (
 
 for /f "usebackq tokens=1,* delims==" %%A in (".env") do (
     if /I "%%A"=="WEB_PORT" set "WEB_PORT=%%B"
+    if /I "%%A"=="DOCKERHUB_USERNAME" set "DOCKERHUB_USERNAME=%%B"
 )
 call :ensure_web_port
 set "APP_URL=http://localhost:%WEB_PORT%"
@@ -104,11 +106,23 @@ if "%SKIP_UPDATE%"=="1" (
 echo [4/6] Downloading the latest Sepehr Panel images...
 docker compose pull
 if errorlevel 1 (
-    echo [WARNING] Image download failed. Trying locally cached images...
+    echo.
+    echo [LOGIN] Docker Hub denied the image download or the connection failed.
+    echo         Sign in once as %DOCKERHUB_USERNAME% to retry securely.
+    echo         Use a Docker Hub personal access token as the password when possible.
+    docker login --username "%DOCKERHUB_USERNAME%"
+    if errorlevel 1 (
+        echo [WARNING] Docker Hub login failed. Trying locally cached images...
+    ) else (
+        echo         Login succeeded. Retrying the image download...
+        docker compose pull
+        if errorlevel 1 echo [WARNING] Image download still failed. Trying locally cached images...
+    )
+    echo         Continuing startup with any locally cached images...
 )
 
 echo [5/6] Starting the database, backend, and website...
-docker compose up -d --no-build
+docker compose up -d --no-build --pull never
 if errorlevel 1 (
     echo [ERROR] Sepehr Panel could not be started.
     echo.
