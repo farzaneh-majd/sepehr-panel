@@ -31,20 +31,10 @@ if errorlevel 1 (
 docker info >nul 2>&1
 if errorlevel 1 (
     echo [1/6] Docker Desktop is not running. Starting it now...
-    set "DOCKER_DESKTOP=%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
-    if not exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" set "DOCKER_DESKTOP=%LocalAppData%\Docker\Docker Desktop.exe"
-
-    if not exist "%DOCKER_DESKTOP%" (
-        echo [ERROR] Docker Desktop was found in PATH, but its application could not be located.
-        echo Please start Docker Desktop manually and run this file again.
-        goto :failed
-    )
-
-    start "" "%DOCKER_DESKTOP%"
-    echo       Waiting for Docker Desktop to become ready...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddMinutes(3); do { docker info *> $null; if ($LASTEXITCODE -eq 0) { exit 0 }; Start-Sleep -Seconds 3 } while ((Get-Date) -lt $limit); exit 1"
+    call :start_docker_desktop
     if errorlevel 1 (
         echo [ERROR] Docker Desktop did not become ready within three minutes.
+        echo Please open Docker Desktop manually, wait for it to finish starting, and try again.
         goto :failed
     )
 ) else (
@@ -165,3 +155,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$text=Get-Content '.env'
 if errorlevel 1 exit /b 0
 set "WEB_PORT=%AVAILABLE_WEB_PORT%"
 exit /b 0
+
+:start_docker_desktop
+docker desktop start >nul 2>&1
+if not errorlevel 1 goto :wait_for_docker
+
+set "DOCKER_DESKTOP="
+if defined ProgramW6432 if exist "%ProgramW6432%\Docker\Docker\Docker Desktop.exe" set "DOCKER_DESKTOP=%ProgramW6432%\Docker\Docker\Docker Desktop.exe"
+if not defined DOCKER_DESKTOP if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" set "DOCKER_DESKTOP=%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
+if not defined DOCKER_DESKTOP if exist "%ProgramFiles(x86)%\Docker\Docker\Docker Desktop.exe" set "DOCKER_DESKTOP=%ProgramFiles(x86)%\Docker\Docker\Docker Desktop.exe"
+if not defined DOCKER_DESKTOP if exist "%LocalAppData%\Docker\Docker Desktop.exe" set "DOCKER_DESKTOP=%LocalAppData%\Docker\Docker Desktop.exe"
+
+if not defined DOCKER_DESKTOP exit /b 1
+start "" "%DOCKER_DESKTOP%"
+
+:wait_for_docker
+echo       Waiting for Docker Desktop to become ready...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$limit=(Get-Date).AddMinutes(3); do { docker info *> $null; if ($LASTEXITCODE -eq 0) { exit 0 }; Start-Sleep -Seconds 3 } while ((Get-Date) -lt $limit); exit 1"
+exit /b %ERRORLEVEL%
